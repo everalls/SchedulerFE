@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { Container, Typography, Button, Box } from '@mui/material';
 import CalendarView from './components/CalendarView';
-import NewAppointmentModal from './components/AppointmentModal';
+import AppointmentDetailsModal from './components/AppointmentModal';
+import { Appointment } from './types/appointment';
 
 const App: React.FC = () => {
   const [open, setOpen] = useState(false);
+  const [activeAppointment, setActiveAppointment] =
+    useState<Appointment | null>(null);
 
   return (
     <Container>
@@ -23,7 +26,12 @@ const App: React.FC = () => {
 
       <CalendarView />
 
-      <NewAppointmentModal open={open} onClose={() => setOpen(false)} />
+      <AppointmentDetailsModal
+        open={open}
+        onClose={() => setOpen(false)}
+        activeAppointment={activeAppointment}
+        setActiveAppointment={setActiveAppointment}
+      />
     </Container>
   );
 };

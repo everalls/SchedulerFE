@@ -4,5 +4,7 @@ export interface Appointment {
   service: string;
   provider: string;
   room: string;
-  time: string;
+
+  startTime: string; // ISO 8601 format
+  endTime: string; // ISO 8601 format
 }

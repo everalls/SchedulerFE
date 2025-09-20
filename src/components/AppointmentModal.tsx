@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -9,46 +9,60 @@ import {
   MenuItem,
   Stack,
 } from '@mui/material';
-import { useAppointments } from '../context/AppointmentsContext';
 import { Appointment } from '../types/appointment';
 
 interface Props {
   open: boolean;
   onClose: () => void;
+  activeAppointment: Appointment | null;
+  setActiveAppointment: React.Dispatch<
+    React.SetStateAction<Appointment | null>
+  >;
+  onSave: (appointment: Appointment) => void; // New prop for save function
 }
 
-const NewAppointmentModal: React.FC<Props> = ({ open, onClose }) => {
-  const { addAppointment } = useAppointments();
-  const [form, setForm] = useState<Omit<Appointment, 'id'>>({
-    clientName: '',
-    service: '',
-    provider: '',
-    room: '',
-    time: '',
-  });
+const AppointmentDetailsModal: React.FC<Props> = ({
+  open,
+  onClose,
+  activeAppointment,
+  setActiveAppointment,
+  onSave, // New prop for save function
+}) => {
+  React.useEffect(() => {
+    if (open && !activeAppointment) {
+      setActiveAppointment({
+        id: '',
+        clientName: '',
+        service: '',
+        provider: '',
+        room: '',
+        startTime: '',
+        endTime: '',
+      });
+    }
+  }, [open, activeAppointment, setActiveAppointment]);
 
-  const handleChange = (field: keyof typeof form, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+  const handleChange = (field: keyof Appointment, value: string) => {
+    if (activeAppointment) {
+      setActiveAppointment({ ...activeAppointment, [field]: value });
+    }
   };
 
   const handleSave = () => {
-    if (
-      !form.clientName ||
-      !form.service ||
-      !form.provider ||
-      !form.room ||
-      !form.time
-    ) {
-      return;
+    if (activeAppointment) {
+      onSave(activeAppointment); // Delegate save logic to parent
+      onClose();
+      setActiveAppointment(null);
     }
-    const newAppt: Appointment = {
-      id: Date.now().toString(),
-      ...form,
-    };
-    addAppointment(newAppt);
-    onClose();
-    setForm({ clientName: '', service: '', provider: '', room: '', time: '' });
   };
+
+  const isFormValid =
+    activeAppointment?.clientName &&
+    activeAppointment?.service &&
+    activeAppointment?.provider &&
+    activeAppointment?.room &&
+    activeAppointment?.startTime &&
+    activeAppointment?.endTime;
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
@@ -57,16 +71,26 @@ const NewAppointmentModal: React.FC<Props> = ({ open, onClose }) => {
         <Stack spacing={2} mt={1}>
           <TextField
             label="Client Name"
-            value={form.clientName}
+            value={activeAppointment?.clientName || ''}
             onChange={(e) => handleChange('clientName', e.target.value)}
             fullWidth
+            required
+            error={!activeAppointment?.clientName}
+            helperText={
+              !activeAppointment?.clientName ? 'Client Name is required' : ''
+            }
           />
           <TextField
             label="Service"
-            value={form.service}
+            value={activeAppointment?.service || ''}
             onChange={(e) => handleChange('service', e.target.value)}
             select
             fullWidth
+            required
+            error={!activeAppointment?.service}
+            helperText={
+              !activeAppointment?.service ? 'Service is required' : ''
+            }
           >
             <MenuItem value="Massage">Massage</MenuItem>
             <MenuItem value="Physiotherapy">Physiotherapy</MenuItem>
@@ -74,29 +98,59 @@ const NewAppointmentModal: React.FC<Props> = ({ open, onClose }) => {
           </TextField>
           <TextField
             label="Provider"
-            value={form.provider}
+            value={activeAppointment?.provider || ''}
             onChange={(e) => handleChange('provider', e.target.value)}
             fullWidth
+            required
+            error={!activeAppointment?.provider}
+            helperText={
+              !activeAppointment?.provider ? 'Provider is required' : ''
+            }
           />
           <TextField
             label="Room"
-            value={form.room}
+            value={activeAppointment?.room || ''}
             onChange={(e) => handleChange('room', e.target.value)}
             fullWidth
+            required
+            error={!activeAppointment?.room}
+            helperText={!activeAppointment?.room ? 'Room is required' : ''}
           />
           <TextField
-            label="Date & Time"
+            label="Start Time"
             type="datetime-local"
-            value={form.time}
-            onChange={(e) => handleChange('time', e.target.value)}
+            value={activeAppointment?.startTime || ''}
+            onChange={(e) => handleChange('startTime', e.target.value)}
             InputLabelProps={{ shrink: true }}
             fullWidth
+            required
+            error={!activeAppointment?.startTime}
+            helperText={
+              !activeAppointment?.startTime ? 'Start Time is required' : ''
+            }
+          />
+          <TextField
+            label="End Time"
+            type="datetime-local"
+            value={activeAppointment?.endTime || ''}
+            onChange={(e) => handleChange('endTime', e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            fullWidth
+            required
+            error={!activeAppointment?.endTime}
+            helperText={
+              !activeAppointment?.endTime ? 'End Time is required' : ''
+            }
           />
         </Stack>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleSave}>
+        <Button
+          variant="contained"
+          onClick={handleSave}
+          disabled={!isFormValid}
+        >
           Save
         </Button>
       </DialogActions>
@@ -104,4 +158,4 @@ const NewAppointmentModal: React.FC<Props> = ({ open, onClose }) => {
   );
 };
 
-export default NewAppointmentModal;
+export default AppointmentDetailsModal;
