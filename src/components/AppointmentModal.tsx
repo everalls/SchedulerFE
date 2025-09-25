@@ -49,6 +49,7 @@ const AppointmentDetailsModal: React.FC<Props> = ({
   };
 
   const handleSave = () => {
+    console.log('Saving appointment:', activeAppointment);
     if (activeAppointment) {
       onSave(activeAppointment); // Delegate save logic to parent
       onClose();
@@ -63,6 +64,10 @@ const AppointmentDetailsModal: React.FC<Props> = ({
     activeAppointment?.room &&
     activeAppointment?.startTime &&
     activeAppointment?.endTime;
+
+  const formatDateTime = (dateTime: string) => {
+    return new Date(dateTime).toISOString().slice(0, 16);
+  };
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
@@ -119,7 +124,11 @@ const AppointmentDetailsModal: React.FC<Props> = ({
           <TextField
             label="Start Time"
             type="datetime-local"
-            value={activeAppointment?.startTime || ''}
+            value={
+              activeAppointment?.startTime
+                ? formatDateTime(activeAppointment.startTime)
+                : ''
+            }
             onChange={(e) => handleChange('startTime', e.target.value)}
             InputLabelProps={{ shrink: true }}
             fullWidth
@@ -132,7 +141,11 @@ const AppointmentDetailsModal: React.FC<Props> = ({
           <TextField
             label="End Time"
             type="datetime-local"
-            value={activeAppointment?.endTime || ''}
+            value={
+              activeAppointment?.endTime
+                ? formatDateTime(activeAppointment.endTime)
+                : ''
+            }
             onChange={(e) => handleChange('endTime', e.target.value)}
             InputLabelProps={{ shrink: true }}
             fullWidth

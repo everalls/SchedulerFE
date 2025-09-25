@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useState } from 'react';
-import { Appointment } from '../types/types';
-import { getMockAppointments } from '../services/appointmentService';
+import { Appointment } from '../types/appointment'; // Corrected import path
+import { getMockAppointments } from '../mock/mockAppointments';
 
 interface AppointmentsContextValue {
   appointments: Appointment[];
   addAppointment: (appt: Appointment) => void;
+  deleteAppointment: (id: string) => void;
+  setAppointments: React.Dispatch<React.SetStateAction<Appointment[]>>; // Added setAppointments
 }
 
 const AppointmentsContext = createContext<AppointmentsContextValue | undefined>(
@@ -19,11 +21,27 @@ export const AppointmentsProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const addAppointment = (appt: Appointment) => {
-    setAppointments((prev) => [...prev, appt]);
+    const appointmentWithId = {
+      ...appt,
+      id: appt.id || crypto.randomUUID(), // Ensure a unique ID is generated if not provided
+    };
+    console.log('Adding appointment:', appointmentWithId);
+    setAppointments((prev) => [...prev, appointmentWithId]);
+  };
+
+  const deleteAppointment = (id: string) => {
+    setAppointments((prev) => prev.filter((appt) => appt.id !== id));
   };
 
   return (
-    <AppointmentsContext.Provider value={{ appointments, addAppointment }}>
+    <AppointmentsContext.Provider
+      value={{
+        appointments,
+        addAppointment,
+        deleteAppointment,
+        setAppointments,
+      }} // Added setAppointments to context value
+    >
       {children}
     </AppointmentsContext.Provider>
   );
