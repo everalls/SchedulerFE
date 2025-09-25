@@ -18,5 +18,6 @@ export type CalendarEvent = {
     clientName: string;
     provider: string;
     room: string;
+    service: string; // Added service property
   };
 };

@@ -2,12 +2,22 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import { Paper, Modal, Box, Typography, IconButton, Toolbar } from '@mui/material';
+import {
+  Paper,
+  Modal,
+  Box,
+  Typography,
+  IconButton,
+  Toolbar,
+} from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { useMemo } from 'react';
+import CloseIcon from '@mui/icons-material/Close';
+import { format } from 'date-fns';
+import { useMemo, useState } from 'react';
 import { useAppointments } from '../context/AppointmentsContext';
 import { Appointment, CalendarEvent } from '../types';
+import { updateAppointment } from '../utils';
 
 interface CalendarViewProps {
   setModalOpen: (open: boolean) => void;
@@ -20,8 +30,8 @@ const CalendarView = (props: CalendarViewProps) => {
   const { appointments, deleteAppointment, setAppointments } =
     useAppointments();
 
-  const [isPopupOpen, setPopupOpen] = React.useState(false);
-  const [popupEvent, setPopupEvent] = React.useState<CalendarEvent | null>(null);
+  const [isPopupOpen, setPopupOpen] = useState(false);
+  const [popupEvent, setPopupEvent] = useState<CalendarEvent | null>(null);
 
   const handleDateSelect = (selectionInfo: {
     startStr: string;
@@ -102,6 +112,7 @@ const CalendarView = (props: CalendarViewProps) => {
           clientName: appointment.clientName,
           provider: appointment.provider,
           room: appointment.room,
+          service: appointment.service, // Added service property
         },
       })),
     [appointments]
@@ -120,7 +131,10 @@ const CalendarView = (props: CalendarViewProps) => {
           }}
           events={events}
           eventContent={(eventInfo) => {
-            return <span>{eventInfo.event.title || 'No Title'}</span>;
+            return (
+              // TODO: Make it nicer, not just a simple span
+              <span>{eventInfo.event.title || 'No Title'}</span>
+            );
           }}
           height="80vh"
           selectable
@@ -142,27 +156,88 @@ const CalendarView = (props: CalendarViewProps) => {
             width: 400,
             bgcolor: 'background.paper',
             boxShadow: 24,
-            p: 4,
+            p: 2,
             borderRadius: 2,
           }}
         >
-          <Toolbar sx={{ justifyContent: 'space-between' }}>
-            <Typography variant="h6">Event Details</Typography>
-            <Box>
-              <IconButton>
-                <EditIcon />
-              </IconButton>
-              <IconButton>
-                <DeleteIcon />
-              </IconButton>
-            </Box>
-          </Toolbar>
+          {/* Icons row */}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: 0.5,
+              mb: 1,
+            }}
+          >
+            <IconButton size="small" sx={{ p: '4px' }}>
+              <EditIcon fontSize="small" />
+            </IconButton>
+            <IconButton size="small" sx={{ p: '4px' }}>
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+            <IconButton
+              size="small"
+              onClick={handleClosePopup}
+              sx={{ p: '4px' }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
+
+          {/* Header */}
+          <Typography
+            variant="h6"
+            sx={{
+              fontSize: '1.1rem',
+              fontWeight: 'bold',
+              mb: 1,
+              wordWrap: 'break-word',
+              textAlign: 'left',
+            }}
+          >
+            {popupEvent?.title || 'No Title'}
+          </Typography>
+
+          {/* Event details */}
           {popupEvent && (
-            <Box mt={2}>
-              <Typography variant="body1">
-                <strong>Time:</strong> {popupEvent.start} - {popupEvent.end}
+            <Box>
+              {/* Dates */}
+              <Typography
+                variant="body2"
+                sx={{ fontSize: '0.85rem', color: 'gray', mb: 1 }}
+              >
+                {popupEvent.start &&
+                  popupEvent.end &&
+                  (() => {
+                    const sameDay =
+                      format(new Date(popupEvent.start), 'yyyy-MM-dd') ===
+                      format(new Date(popupEvent.end), 'yyyy-MM-dd');
+
+                    if (sameDay) {
+                      return `${format(
+                        new Date(popupEvent.start),
+                        'EEEE, MMMM d'
+                      )} ${format(new Date(popupEvent.start), 'p')} – ${format(
+                        new Date(popupEvent.end),
+                        'p'
+                      )}`;
+                    } else {
+                      return `${format(
+                        new Date(popupEvent.start),
+                        'EEEE, MMMM d, p'
+                      )} – ${format(
+                        new Date(popupEvent.end),
+                        'EEEE, MMMM d, p'
+                      )}`;
+                    }
+                  })()}
               </Typography>
-              <Typography variant="body1">
+
+              {/* Room */}
+              <Typography
+                variant="body2"
+                sx={{ fontSize: '0.85rem', color: 'gray' }}
+              >
                 <strong>Room:</strong> {popupEvent.extendedProps.room || 'N/A'}
               </Typography>
             </Box>
