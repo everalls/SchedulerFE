@@ -177,6 +177,12 @@ const CalendarView = () => {
         <FullCalendar
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView="timeGridWeek"
+          slotDuration="00:15:00"
+          // slotLabelInterval="00:15:00"
+          slotLabelFormat={{
+            hour: 'numeric',
+            minute: '2-digit',
+          }}
           headerToolbar={{
             left: 'prev,next today',
             center: 'title',
@@ -331,7 +337,11 @@ const CalendarView = () => {
           onClose={handleSnackbarClose}
           severity={snackbarState.severity}
           variant="filled"
-          sx={{ width: '100%' }}
+          sx={{
+            width: { xs: '90vw', sm: 360 },
+            textAlign: 'center',
+            justifyContent: 'center',
+          }}
         >
           {snackbarState.message}
         </Alert>

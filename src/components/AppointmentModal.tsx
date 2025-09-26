@@ -140,6 +140,7 @@ const AppointmentDetailsModal: React.FC<Props> = ({
               !activeAppointment?.startTime ? 'Start Time is required' : ''
             }
           />
+
           <TextField
             label="End Time"
             type="datetime-local"
