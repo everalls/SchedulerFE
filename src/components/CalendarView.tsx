@@ -13,6 +13,8 @@ import {
   DialogActions,
   Typography,
 } from '@mui/material';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 import { useMemo, useState } from 'react';
 import { useAppointments } from '../context/AppointmentsContext';
 import { Appointment, CalendarEvent } from '../types';
@@ -32,6 +34,27 @@ const CalendarView = () => {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [deleteTargetEvent, setDeleteTargetEvent] =
     useState<CalendarEvent | null>(null);
+  const [snackbarState, setSnackbarState] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error';
+    key: number;
+  }>({ open: false, message: '', severity: 'success', key: 0 });
+
+  const showSnackbar = (
+    message: string,
+    severity: 'success' | 'error' = 'success'
+  ) => {
+    setSnackbarState({ open: true, message, severity, key: Date.now() });
+  };
+
+  const handleSnackbarClose = (
+    _event?: React.SyntheticEvent | Event,
+    reason?: string
+  ) => {
+    if (reason === 'clickaway') return;
+    setSnackbarState((s) => ({ ...s, open: false }));
+  };
 
   const handleDateSelect = (selectionInfo: {
     startStr: string;
@@ -53,6 +76,7 @@ const CalendarView = () => {
     info.jsEvent.preventDefault(); // Prevent default browser context menu
     if (!info.event.id) {
       console.error('Event ID is missing! Ensure events have unique IDs.');
+      showSnackbar('Invalid event data', 'error');
       return;
     }
 
@@ -81,6 +105,9 @@ const CalendarView = () => {
           endTime: updatedEnd,
         })
       );
+      showSnackbar('Appointment time updated', 'success');
+    } else {
+      showSnackbar('Invalid event data', 'error');
     }
   };
 
@@ -96,6 +123,9 @@ const CalendarView = () => {
           endTime: updatedEnd,
         })
       );
+      showSnackbar('Appointment time updated', 'success');
+    } else {
+      showSnackbar('Invalid event data', 'error');
     }
   };
 
@@ -190,6 +220,7 @@ const CalendarView = () => {
             const appt = appointments.find((a) => a.id === id);
             if (!appt) {
               console.warn('Appointment not found for editing:', id);
+              showSnackbar('Appointment not found', 'error');
               return;
             }
             setActiveAppointment(appt);
@@ -253,6 +284,9 @@ const CalendarView = () => {
             onClick={() => {
               if (deleteTargetEvent?.id) {
                 deleteAppointment(deleteTargetEvent.id);
+                showSnackbar('Appointment deleted', 'success');
+              } else {
+                showSnackbar('Invalid event data', 'error');
               }
               setConfirmDeleteOpen(false);
               setDeleteTargetEvent(null);
@@ -278,11 +312,30 @@ const CalendarView = () => {
             setAppointments((prev) =>
               updateAppointment(prev, appointment.id, appointment)
             );
+            showSnackbar('Appointment updated', 'success');
           } else {
             addAppointment(appointment);
+            showSnackbar('Appointment created', 'success');
           }
         }}
       />
+
+      <Snackbar
+        key={snackbarState.key}
+        open={snackbarState.open}
+        autoHideDuration={1000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={handleSnackbarClose}
+          severity={snackbarState.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbarState.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 };
