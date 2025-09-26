@@ -2,22 +2,12 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import {
-  Paper,
-  Modal,
-  Box,
-  Typography,
-  IconButton,
-  Toolbar,
-} from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import CloseIcon from '@mui/icons-material/Close';
-import { format } from 'date-fns';
+import { Modal, Paper } from '@mui/material';
 import { useMemo, useState } from 'react';
 import { useAppointments } from '../context/AppointmentsContext';
 import { Appointment, CalendarEvent } from '../types';
 import { updateAppointment } from '../utils';
+import EventDetailsModal from './EventDetailsModal';
 
 interface CalendarViewProps {
   setModalOpen: (open: boolean) => void;
@@ -146,103 +136,15 @@ const CalendarView = (props: CalendarViewProps) => {
         />
       </Paper>
 
-      <Modal open={isPopupOpen} onClose={handleClosePopup}>
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 400,
-            bgcolor: 'background.paper',
-            boxShadow: 24,
-            p: 2,
-            borderRadius: 2,
-          }}
-        >
-          {/* Icons row */}
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'flex-end',
-              gap: 0.5,
-              mb: 1,
-            }}
-          >
-            <IconButton size="small" sx={{ p: '4px' }}>
-              <EditIcon fontSize="small" />
-            </IconButton>
-            <IconButton size="small" sx={{ p: '4px' }}>
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-            <IconButton
-              size="small"
-              onClick={handleClosePopup}
-              sx={{ p: '4px' }}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </Box>
-
-          {/* Header */}
-          <Typography
-            variant="h6"
-            sx={{
-              fontSize: '1.1rem',
-              fontWeight: 'bold',
-              mb: 1,
-              wordWrap: 'break-word',
-              textAlign: 'left',
-            }}
-          >
-            {popupEvent?.title || 'No Title'}
-          </Typography>
-
-          {/* Event details */}
-          {popupEvent && (
-            <Box>
-              {/* Dates */}
-              <Typography
-                variant="body2"
-                sx={{ fontSize: '0.85rem', color: 'gray', mb: 1 }}
-              >
-                {popupEvent.start &&
-                  popupEvent.end &&
-                  (() => {
-                    const sameDay =
-                      format(new Date(popupEvent.start), 'yyyy-MM-dd') ===
-                      format(new Date(popupEvent.end), 'yyyy-MM-dd');
-
-                    if (sameDay) {
-                      return `${format(
-                        new Date(popupEvent.start),
-                        'EEEE, MMMM d'
-                      )} ${format(new Date(popupEvent.start), 'p')} – ${format(
-                        new Date(popupEvent.end),
-                        'p'
-                      )}`;
-                    } else {
-                      return `${format(
-                        new Date(popupEvent.start),
-                        'EEEE, MMMM d, p'
-                      )} – ${format(
-                        new Date(popupEvent.end),
-                        'EEEE, MMMM d, p'
-                      )}`;
-                    }
-                  })()}
-              </Typography>
-
-              {/* Room */}
-              <Typography
-                variant="body2"
-                sx={{ fontSize: '0.85rem', color: 'gray' }}
-              >
-                <strong>Room:</strong> {popupEvent.extendedProps.room || 'N/A'}
-              </Typography>
-            </Box>
-          )}
-        </Box>
+      <Modal
+        open={Boolean(popupEvent)}
+        onClose={handleClosePopup}
+        slotProps={{ backdrop: { sx: { backgroundColor: 'rgba(0,0,0,0.4)' } } }}
+      >
+        <EventDetailsModal
+          popupEvent={popupEvent}
+          handleClosePopup={handleClosePopup}
+        />
       </Modal>
     </>
   );
