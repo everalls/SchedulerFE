@@ -2,21 +2,36 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import { Box, Button, Modal, Paper } from '@mui/material';
+import {
+  Box,
+  Button,
+  Modal,
+  Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Typography,
+} from '@mui/material';
 import { useMemo, useState } from 'react';
 import { useAppointments } from '../context/AppointmentsContext';
 import { Appointment, CalendarEvent } from '../types';
 import { updateAppointment } from '../utils';
 import EventDetailsModal from './EventDetailsModal';
 import AppointmentDetailsModal from './AppointmentModal';
+import { format } from 'date-fns';
 
 const CalendarView = () => {
-  const { appointments, addAppointment, setAppointments } = useAppointments();
+  const { appointments, addAppointment, setAppointments, deleteAppointment } =
+    useAppointments();
 
   const [popupEvent, setPopupEvent] = useState<CalendarEvent | null>(null);
   const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
   const [activeAppointment, setActiveAppointment] =
     useState<Appointment | null>(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [deleteTargetEvent, setDeleteTargetEvent] =
+    useState<CalendarEvent | null>(null);
 
   const handleDateSelect = (selectionInfo: {
     startStr: string;
@@ -163,11 +178,90 @@ const CalendarView = () => {
           popupEvent={popupEvent}
           handleClosePopup={handleClosePopup}
           onRequestDelete={() => {
-            // No-op delete behavior for now: just close the details modal
-            handleClosePopup();
+            // Close details and open confirm dialog with current event as target
+            if (popupEvent) {
+              setDeleteTargetEvent(popupEvent);
+            }
+            setPopupEvent(null);
+            setConfirmDeleteOpen(true);
+          }}
+          onRequestEdit={(id) => {
+            // Find the appointment by id and open the modal prefilled
+            const appt = appointments.find((a) => a.id === id);
+            if (!appt) {
+              console.warn('Appointment not found for editing:', id);
+              return;
+            }
+            setActiveAppointment(appt);
+            setPopupEvent(null);
+            setAppointmentModalOpen(true);
           }}
         />
       </Modal>
+
+      {/* Confirm Delete Dialog */}
+      <Dialog
+        open={confirmDeleteOpen}
+        onClose={() => setConfirmDeleteOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Delete appointment?</DialogTitle>
+        <DialogContent>
+          {deleteTargetEvent && (
+            <>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                {deleteTargetEvent.title}
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'gray' }}>
+                {(() => {
+                  const startDate = new Date(deleteTargetEvent.start);
+                  const endDate = new Date(deleteTargetEvent.end);
+                  const sameDay =
+                    format(startDate, 'yyyy-MM-dd') ===
+                    format(endDate, 'yyyy-MM-dd');
+                  if (sameDay) {
+                    return `${format(
+                      startDate,
+                      'EEEE, MMMM d'
+                    )} \u2022 ${format(startDate, 'p')} \u2013 ${format(
+                      endDate,
+                      'p'
+                    )}`;
+                  }
+                  return `${format(startDate, 'EEE, MMM d, p')} \u2013 ${format(
+                    endDate,
+                    'EEE, MMM d, p'
+                  )}`;
+                })()}
+              </Typography>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setConfirmDeleteOpen(false);
+              setDeleteTargetEvent(null);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={() => {
+              if (deleteTargetEvent?.id) {
+                deleteAppointment(deleteTargetEvent.id);
+              }
+              setConfirmDeleteOpen(false);
+              setDeleteTargetEvent(null);
+            }}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <AppointmentDetailsModal
         open={appointmentModalOpen}
@@ -178,7 +272,15 @@ const CalendarView = () => {
         activeAppointment={activeAppointment}
         setActiveAppointment={setActiveAppointment}
         onSave={(appointment) => {
-          addAppointment(appointment);
+          // If the id exists in store, update; otherwise create
+          const exists = appointments.some((a) => a.id === appointment.id);
+          if (exists && appointment.id) {
+            setAppointments((prev) =>
+              updateAppointment(prev, appointment.id, appointment)
+            );
+          } else {
+            addAppointment(appointment);
+          }
         }}
       />
     </>

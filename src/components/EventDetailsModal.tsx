@@ -10,12 +10,14 @@ interface EventDetailsModalProps {
   popupEvent: CalendarEvent | null;
   handleClosePopup: () => void;
   onRequestDelete?: (id: string) => void;
+  onRequestEdit?: (id: string) => void;
 }
 
 const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
   popupEvent,
   handleClosePopup,
   onRequestDelete,
+  onRequestEdit,
 }) => {
   if (!popupEvent) return null;
 
@@ -42,7 +44,11 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
           mb: 1,
         }}
       >
-        <IconButton size="small" sx={{ p: '4px' }}>
+        <IconButton
+          size="small"
+          sx={{ p: '4px' }}
+          onClick={() => onRequestEdit?.(popupEvent.id)}
+        >
           <EditIcon fontSize="small" />
         </IconButton>
         <IconButton
