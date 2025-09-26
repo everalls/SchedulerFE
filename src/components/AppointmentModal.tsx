@@ -71,7 +71,9 @@ const AppointmentDetailsModal: React.FC<Props> = ({
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>New Appointment</DialogTitle>
+      <DialogTitle>
+        {activeAppointment?.id ? 'Edit Appointment' : 'New Appointment'}
+      </DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <TextField
