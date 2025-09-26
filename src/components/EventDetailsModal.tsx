@@ -9,11 +9,13 @@ import { CalendarEvent } from '../types';
 interface EventDetailsModalProps {
   popupEvent: CalendarEvent | null;
   handleClosePopup: () => void;
+  onRequestDelete?: (id: string) => void;
 }
 
 const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
   popupEvent,
   handleClosePopup,
+  onRequestDelete,
 }) => {
   if (!popupEvent) return null;
 
@@ -43,7 +45,11 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
         <IconButton size="small" sx={{ p: '4px' }}>
           <EditIcon fontSize="small" />
         </IconButton>
-        <IconButton size="small" sx={{ p: '4px' }}>
+        <IconButton
+          size="small"
+          sx={{ p: '4px' }}
+          onClick={() => onRequestDelete?.(popupEvent.id)}
+        >
           <DeleteIcon fontSize="small" />
         </IconButton>
         <IconButton size="small" onClick={handleClosePopup} sx={{ p: '4px' }}>
@@ -67,7 +73,6 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
 
       {/* Event details */}
       <Box>
-        {/* Dates */}
         <Typography
           variant="body2"
           sx={{ fontSize: '0.85rem', color: 'gray', mb: 1 }}
@@ -75,24 +80,24 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
           {popupEvent.start &&
             popupEvent.end &&
             (() => {
+              const startDate = new Date(popupEvent.start);
+              const endDate = new Date(popupEvent.end);
               const sameDay =
-                format(new Date(popupEvent.start), 'yyyy-MM-dd') ===
-                format(new Date(popupEvent.end), 'yyyy-MM-dd');
+                format(startDate, 'yyyy-MM-dd') ===
+                format(endDate, 'yyyy-MM-dd');
 
               if (sameDay) {
-                return `${format(
-                  new Date(popupEvent.start),
-                  'EEEE, MMMM d'
-                )} ${format(new Date(popupEvent.start), 'p')} – ${format(
-                  new Date(popupEvent.end),
+                // Friday, September 26 • 9:00 AM – 10:00 AM
+                return `${format(startDate, 'EEEE, MMMM d')} \u2022 ${format(
+                  startDate,
                   'p'
-                )}`;
-              } else {
-                return `${format(
-                  new Date(popupEvent.start),
-                  'EEEE, MMMM d, p'
-                )} – ${format(new Date(popupEvent.end), 'EEEE, MMMM d, p')}`;
+                )} \u2013 ${format(endDate, 'p')}`;
               }
+              // Fri, Sep 26, 9:00 AM – Sat, Sep 27, 10:00 AM
+              return `${format(startDate, 'EEE, MMM d, p')} \u2013 ${format(
+                endDate,
+                'EEE, MMM d, p'
+              )}`;
             })()}
         </Typography>
 

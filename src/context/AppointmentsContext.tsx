@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
-import { Appointment } from '../types/appointment'; // Corrected import path
+import { Appointment } from '../types';
 import { getMockAppointments } from '../mock/mockAppointments';
 
 interface AppointmentsContextValue {
