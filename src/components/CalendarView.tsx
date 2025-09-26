@@ -2,26 +2,21 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import { Modal, Paper } from '@mui/material';
+import { Box, Button, Modal, Paper } from '@mui/material';
 import { useMemo, useState } from 'react';
 import { useAppointments } from '../context/AppointmentsContext';
 import { Appointment, CalendarEvent } from '../types';
 import { updateAppointment } from '../utils';
 import EventDetailsModal from './EventDetailsModal';
+import AppointmentDetailsModal from './AppointmentModal';
 
-interface CalendarViewProps {
-  setModalOpen: (open: boolean) => void;
-  activeAppointment: Appointment | null;
-  setActiveAppointment: (appointment: Appointment | null) => void;
-}
+const CalendarView = () => {
+  const { appointments, addAppointment, setAppointments } = useAppointments();
 
-const CalendarView = (props: CalendarViewProps) => {
-  const { setModalOpen, activeAppointment, setActiveAppointment } = props;
-  const { appointments, deleteAppointment, setAppointments } =
-    useAppointments();
-
-  const [isPopupOpen, setPopupOpen] = useState(false);
   const [popupEvent, setPopupEvent] = useState<CalendarEvent | null>(null);
+  const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
+  const [activeAppointment, setActiveAppointment] =
+    useState<Appointment | null>(null);
 
   const handleDateSelect = (selectionInfo: {
     startStr: string;
@@ -36,7 +31,7 @@ const CalendarView = (props: CalendarViewProps) => {
       startTime: selectionInfo.startStr,
       endTime: selectionInfo.endStr,
     });
-    setModalOpen(true);
+    setAppointmentModalOpen(true);
   };
 
   const handleEventClick = (info: any) => {
@@ -53,11 +48,9 @@ const CalendarView = (props: CalendarViewProps) => {
       end: info.event.end?.toISOString() || '',
       extendedProps: info.event.extendedProps,
     });
-    setPopupOpen(true);
   };
 
   const handleClosePopup = () => {
-    setPopupOpen(false);
     setPopupEvent(null);
   };
 
@@ -110,6 +103,31 @@ const CalendarView = (props: CalendarViewProps) => {
 
   return (
     <>
+      <Box
+        display="flex"
+        justifyContent="flex-end"
+        alignItems="center"
+        mt={2}
+        mb={1}
+      >
+        <Button
+          variant="contained"
+          onClick={() => {
+            setActiveAppointment({
+              id: '',
+              clientName: '',
+              service: '',
+              provider: '',
+              room: '',
+              startTime: '',
+              endTime: '',
+            });
+            setAppointmentModalOpen(true);
+          }}
+        >
+          New Appointment
+        </Button>
+      </Box>
       <Paper sx={{ p: 2 }}>
         <FullCalendar
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -144,8 +162,25 @@ const CalendarView = (props: CalendarViewProps) => {
         <EventDetailsModal
           popupEvent={popupEvent}
           handleClosePopup={handleClosePopup}
+          onRequestDelete={() => {
+            // No-op delete behavior for now: just close the details modal
+            handleClosePopup();
+          }}
         />
       </Modal>
+
+      <AppointmentDetailsModal
+        open={appointmentModalOpen}
+        onClose={() => {
+          setAppointmentModalOpen(false);
+          setActiveAppointment(null);
+        }}
+        activeAppointment={activeAppointment}
+        setActiveAppointment={setActiveAppointment}
+        onSave={(appointment) => {
+          addAppointment(appointment);
+        }}
+      />
     </>
   );
 };

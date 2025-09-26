@@ -9,7 +9,7 @@ import {
   MenuItem,
   Stack,
 } from '@mui/material';
-import { Appointment } from '../types/appointment';
+import { Appointment } from '../types';
 
 interface Props {
   open: boolean;
