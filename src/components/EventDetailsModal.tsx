@@ -83,28 +83,20 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
           variant="body2"
           sx={{ fontSize: '0.85rem', color: 'gray', mb: 1 }}
         >
-          {popupEvent.start &&
-            popupEvent.end &&
-            (() => {
-              const startDate = new Date(popupEvent.start);
-              const endDate = new Date(popupEvent.end);
-              const sameDay =
-                format(startDate, 'yyyy-MM-dd') ===
-                format(endDate, 'yyyy-MM-dd');
-
-              if (sameDay) {
-                // Friday, September 26 • 9:00 AM – 10:00 AM
-                return `${format(startDate, 'EEEE, MMMM d')} \u2022 ${format(
-                  startDate,
-                  'p'
-                )} \u2013 ${format(endDate, 'p')}`;
-              }
-              // Fri, Sep 26, 9:00 AM – Sat, Sep 27, 10:00 AM
-              return `${format(startDate, 'EEE, MMM d, p')} \u2013 ${format(
-                endDate,
-                'EEE, MMM d, p'
-              )}`;
-            })()}
+          {popupEvent.start && (() => {
+            const startDate = new Date(popupEvent.start);
+            if (!popupEvent.end) {
+              // Show only start when end is missing
+              return `${format(startDate, 'EEEE, MMMM d')} \u2022 ${format(startDate, 'p')}`;
+            }
+            const endDate = new Date(popupEvent.end);
+            const sameDay =
+              format(startDate, 'yyyy-MM-dd') === format(endDate, 'yyyy-MM-dd');
+            if (sameDay) {
+              return `${format(startDate, 'EEEE, MMMM d')} \u2022 ${format(startDate, 'p')} \u2013 ${format(endDate, 'p')}`;
+            }
+            return `${format(startDate, 'EEE, MMM d, p')} \u2013 ${format(endDate, 'EEE, MMM d, p')}`;
+          })()}
         </Typography>
 
         {/* Room */}
