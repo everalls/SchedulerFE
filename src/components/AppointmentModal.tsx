@@ -10,6 +10,7 @@ import {
   Stack,
 } from '@mui/material';
 import { Appointment } from '../types';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 
 interface Props {
   open: boolean;
@@ -65,9 +66,8 @@ const AppointmentDetailsModal: React.FC<Props> = ({
     activeAppointment?.startTime &&
     activeAppointment?.endTime;
 
-  const formatDateTime = (dateTime: string) => {
-    return new Date(dateTime).toISOString().slice(0, 16);
-  };
+  const parseToDate = (value: string | null | undefined) =>
+    value ? new Date(value) : null;
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
@@ -123,39 +123,42 @@ const AppointmentDetailsModal: React.FC<Props> = ({
             error={!activeAppointment?.room}
             helperText={!activeAppointment?.room ? 'Room is required' : ''}
           />
-          <TextField
+          <DateTimePicker
             label="Start Time"
-            type="datetime-local"
-            value={
-              activeAppointment?.startTime
-                ? formatDateTime(activeAppointment.startTime)
-                : ''
+            value={parseToDate(activeAppointment?.startTime)}
+            onChange={(newValue) =>
+              handleChange('startTime', newValue ? newValue.toISOString() : '')
             }
-            onChange={(e) => handleChange('startTime', e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-            required
-            error={!activeAppointment?.startTime}
-            helperText={
-              !activeAppointment?.startTime ? 'Start Time is required' : ''
-            }
+            minutesStep={15}
+            slotProps={{
+              textField: {
+                fullWidth: true,
+                required: true,
+                error: !activeAppointment?.startTime,
+                helperText: !activeAppointment?.startTime
+                  ? 'Start Time is required'
+                  : '',
+              },
+            }}
           />
-          <TextField
+
+          <DateTimePicker
             label="End Time"
-            type="datetime-local"
-            value={
-              activeAppointment?.endTime
-                ? formatDateTime(activeAppointment.endTime)
-                : ''
+            value={parseToDate(activeAppointment?.endTime)}
+            onChange={(newValue) =>
+              handleChange('endTime', newValue ? newValue.toISOString() : '')
             }
-            onChange={(e) => handleChange('endTime', e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-            required
-            error={!activeAppointment?.endTime}
-            helperText={
-              !activeAppointment?.endTime ? 'End Time is required' : ''
-            }
+            minutesStep={15}
+            slotProps={{
+              textField: {
+                fullWidth: true,
+                required: true,
+                error: !activeAppointment?.endTime,
+                helperText: !activeAppointment?.endTime
+                  ? 'End Time is required'
+                  : '',
+              },
+            }}
           />
         </Stack>
       </DialogContent>
