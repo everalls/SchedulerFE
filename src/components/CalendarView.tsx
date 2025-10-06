@@ -17,23 +17,23 @@ import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import { useMemo, useState } from 'react';
 import { useAppointments } from '../context/AppointmentsContext';
-import { Appointment, CalendarEvent } from '../types';
+import { Appointment } from '../types';
 import { updateAppointment } from '../utils';
 import EventDetailsModal from './EventDetailsModal';
 import AppointmentDetailsModal from './AppointmentModal';
 import { format } from 'date-fns';
+import { appointmentToCalendarEvent } from '../transformers';
 
 const CalendarView = () => {
   const { appointments, addAppointment, setAppointments, deleteAppointment } =
     useAppointments();
 
-  const [popupEvent, setPopupEvent] = useState<CalendarEvent | null>(null);
+  const [popupEvent, setPopupEvent] = useState<any | null>(null);
   const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
   const [activeAppointment, setActiveAppointment] =
     useState<Appointment | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-  const [deleteTargetEvent, setDeleteTargetEvent] =
-    useState<CalendarEvent | null>(null);
+  const [deleteTargetEvent, setDeleteTargetEvent] = useState<any | null>(null);
   const [snackbarState, setSnackbarState] = useState<{
     open: boolean;
     message: string;
@@ -129,20 +129,8 @@ const CalendarView = () => {
     }
   };
 
-  const events: CalendarEvent[] = useMemo(
-    () =>
-      appointments.map((appointment) => ({
-        id: appointment.id,
-        title: `${appointment.clientName} - ${appointment.service}`,
-        start: appointment.startTime,
-        end: appointment.endTime,
-        extendedProps: {
-          clientName: appointment.clientName,
-          provider: appointment.provider,
-          room: appointment.room,
-          service: appointment.service, // Added service property
-        },
-      })),
+  const events = useMemo(
+    () => appointments.map(appointmentToCalendarEvent),
     [appointments]
   );
 

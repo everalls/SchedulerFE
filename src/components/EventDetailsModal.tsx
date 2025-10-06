@@ -4,10 +4,22 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
 import { format } from 'date-fns';
-import { CalendarEvent } from '../types';
+// Inline view model used by CalendarView when opening the popup
+type CalendarPopupEvent = {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+  extendedProps: {
+    clientName: string;
+    provider: string;
+    room: string;
+    service: string;
+  };
+};
 
 interface EventDetailsModalProps {
-  popupEvent: CalendarEvent | null;
+  popupEvent: CalendarPopupEvent | null;
   handleClosePopup: () => void;
   onRequestDelete?: (id: string) => void;
   onRequestEdit?: (id: string) => void;
@@ -83,20 +95,31 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
           variant="body2"
           sx={{ fontSize: '0.85rem', color: 'gray', mb: 1 }}
         >
-          {popupEvent.start && (() => {
-            const startDate = new Date(popupEvent.start);
-            if (!popupEvent.end) {
-              // Show only start when end is missing
-              return `${format(startDate, 'EEEE, MMMM d')} \u2022 ${format(startDate, 'p')}`;
-            }
-            const endDate = new Date(popupEvent.end);
-            const sameDay =
-              format(startDate, 'yyyy-MM-dd') === format(endDate, 'yyyy-MM-dd');
-            if (sameDay) {
-              return `${format(startDate, 'EEEE, MMMM d')} \u2022 ${format(startDate, 'p')} \u2013 ${format(endDate, 'p')}`;
-            }
-            return `${format(startDate, 'EEE, MMM d, p')} \u2013 ${format(endDate, 'EEE, MMM d, p')}`;
-          })()}
+          {popupEvent.start &&
+            (() => {
+              const startDate = new Date(popupEvent.start);
+              if (!popupEvent.end) {
+                // Show only start when end is missing
+                return `${format(startDate, 'EEEE, MMMM d')} \u2022 ${format(
+                  startDate,
+                  'p'
+                )}`;
+              }
+              const endDate = new Date(popupEvent.end);
+              const sameDay =
+                format(startDate, 'yyyy-MM-dd') ===
+                format(endDate, 'yyyy-MM-dd');
+              if (sameDay) {
+                return `${format(startDate, 'EEEE, MMMM d')} \u2022 ${format(
+                  startDate,
+                  'p'
+                )} \u2013 ${format(endDate, 'p')}`;
+              }
+              return `${format(startDate, 'EEE, MMM d, p')} \u2013 ${format(
+                endDate,
+                'EEE, MMM d, p'
+              )}`;
+            })()}
         </Typography>
 
         {/* Room */}
