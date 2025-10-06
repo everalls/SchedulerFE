@@ -7,7 +7,7 @@ const isDevelopment =
   window.location.hostname === '127.0.0.1';
 const API_BASE_URL = isDevelopment
   ? '/api' // Proxy through Vite dev server (fixes CORS in development)
-  : 'https://corsproxy.io/?https://schedule-spa-api-c7bmhvb4b0fgcrc9.canadacentral-01.azurewebsites.net/api'; // CORS proxy for GitHub Pages
+  : 'https://thingproxy.freeboard.io/fetch/https://schedule-spa-api-c7bmhvb4b0fgcrc9.canadacentral-01.azurewebsites.net/api'; // CORS proxy for GitHub Pages
 const CALENDAR_ID = 2; // Constant for now, will come from Auth later
 
 export interface ApiError {
