@@ -6,8 +6,8 @@ import {
   DialogActions,
   Button,
   TextField,
-  MenuItem,
   Stack,
+  Autocomplete,
 } from '@mui/material';
 import { Appointment } from '../types';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
@@ -29,6 +29,80 @@ const AppointmentDetailsModal: React.FC<Props> = ({
   setActiveAppointment,
   onSave, // New prop for save function
 }) => {
+  // Mock data arrays
+  const clientOptions = [
+    'John Smith',
+    'Sarah Davis',
+    'Michael Johnson',
+    'Emily Wilson',
+    'David Brown',
+    'Lisa Anderson',
+    'Robert Taylor',
+    'Jennifer Martinez',
+    'Christopher Lee',
+    'Amanda Garcia',
+    'James Wilson',
+    'Maria Rodriguez',
+    'Kevin Thompson',
+    'Rachel Green',
+    'Daniel Kim',
+    'Jessica White',
+    'Matthew Davis',
+    'Ashley Brown',
+    'Ryan Miller',
+    'Nicole Taylor',
+  ];
+
+  const serviceOptions = [
+    'Massage Therapy',
+    'Deep Tissue Massage',
+    'Swedish Massage',
+    'Physiotherapy',
+    'Sports Therapy',
+    'Chiropractic',
+    'Consultation',
+    'Follow-up Visit',
+    'Initial Assessment',
+    'Rehabilitation',
+    'Pain Management',
+    'Wellness Check',
+    'Therapeutic Exercise',
+    'Manual Therapy',
+  ];
+
+  const providerOptions = [
+    'Dr. Sarah Johnson',
+    'Dr. Michael Chen',
+    'Dr. Emily Rodriguez',
+    'Dr. David Thompson',
+    'Dr. Lisa Wang',
+    'Dr. James Wilson',
+    'Dr. Maria Garcia',
+    'Dr. Robert Kim',
+    'Dr. Jennifer Lee',
+    'Dr. Christopher Brown',
+    'Dr. Amanda Davis',
+    'Dr. Kevin Martinez',
+    'Dr. Rachel Taylor',
+  ];
+
+  const roomOptions = [
+    'Room 101',
+    'Room 102',
+    'Room 103',
+    'Room 201',
+    'Room 202',
+    'Room 203',
+    'Conference Room A',
+    'Conference Room B',
+    'Room 301',
+    'Room 302',
+    'Room 303',
+    'Private Suite 1',
+    'Private Suite 2',
+    'Therapy Room 1',
+    'Therapy Room 2',
+  ];
   React.useEffect(() => {
     if (open && !activeAppointment) {
       setActiveAppointment({
@@ -76,52 +150,87 @@ const AppointmentDetailsModal: React.FC<Props> = ({
       </DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
-          <TextField
-            label="Client Name"
-            value={activeAppointment?.clientName || ''}
-            onChange={(e) => handleChange('clientName', e.target.value)}
-            fullWidth
-            required
-            error={!activeAppointment?.clientName}
-            helperText={
-              !activeAppointment?.clientName ? 'Client Name is required' : ''
+          <Autocomplete
+            options={clientOptions}
+            value={activeAppointment?.clientName || null}
+            onChange={(event, newValue) =>
+              handleChange('clientName', newValue || '')
             }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Client Name"
+                required
+                error={!activeAppointment?.clientName}
+                helperText={
+                  !activeAppointment?.clientName
+                    ? 'Client Name is required'
+                    : ''
+                }
+              />
+            )}
+            ListboxProps={{
+              style: { maxHeight: '200px' },
+            }}
           />
-          <TextField
-            label="Service"
-            value={activeAppointment?.service || ''}
-            onChange={(e) => handleChange('service', e.target.value)}
-            select
-            fullWidth
-            required
-            error={!activeAppointment?.service}
-            helperText={
-              !activeAppointment?.service ? 'Service is required' : ''
+          <Autocomplete
+            options={serviceOptions}
+            value={activeAppointment?.service || null}
+            onChange={(event, newValue) =>
+              handleChange('service', newValue || '')
             }
-          >
-            <MenuItem value="Massage">Massage</MenuItem>
-            <MenuItem value="Physiotherapy">Physiotherapy</MenuItem>
-            <MenuItem value="Consultation">Consultation</MenuItem>
-          </TextField>
-          <TextField
-            label="Provider"
-            value={activeAppointment?.provider || ''}
-            onChange={(e) => handleChange('provider', e.target.value)}
-            fullWidth
-            required
-            error={!activeAppointment?.provider}
-            helperText={
-              !activeAppointment?.provider ? 'Provider is required' : ''
-            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Service"
+                required
+                error={!activeAppointment?.service}
+                helperText={
+                  !activeAppointment?.service ? 'Service is required' : ''
+                }
+              />
+            )}
+            ListboxProps={{
+              style: { maxHeight: '200px' },
+            }}
           />
-          <TextField
-            label="Room"
-            value={activeAppointment?.room || ''}
-            onChange={(e) => handleChange('room', e.target.value)}
-            fullWidth
-            required
-            error={!activeAppointment?.room}
-            helperText={!activeAppointment?.room ? 'Room is required' : ''}
+          <Autocomplete
+            options={providerOptions}
+            value={activeAppointment?.provider || null}
+            onChange={(event, newValue) =>
+              handleChange('provider', newValue || '')
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Provider"
+                required
+                error={!activeAppointment?.provider}
+                helperText={
+                  !activeAppointment?.provider ? 'Provider is required' : ''
+                }
+              />
+            )}
+            ListboxProps={{
+              style: { maxHeight: '200px' },
+            }}
+          />
+          <Autocomplete
+            options={roomOptions}
+            value={activeAppointment?.room || null}
+            onChange={(event, newValue) => handleChange('room', newValue || '')}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Room"
+                required
+                error={!activeAppointment?.room}
+                helperText={!activeAppointment?.room ? 'Room is required' : ''}
+              />
+            )}
+            ListboxProps={{
+              style: { maxHeight: '200px' },
+            }}
           />
           <DateTimePicker
             label="Start Time"
