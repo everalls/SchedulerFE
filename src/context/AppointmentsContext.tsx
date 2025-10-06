@@ -1,12 +1,19 @@
-import React, { createContext, useContext, useState } from 'react';
-import { Appointment } from '../types';
+import React, { createContext, useContext, useState, useCallback } from 'react';
+import { Appointment, BackendCalendarEvent } from '../types';
 import { getMockAppointments } from '../mock/mockAppointments';
+import { fetchEvents, FetchEventsParams } from '../services/api';
+import { backendToAppointment } from '../transformers';
 
 interface AppointmentsContextValue {
   appointments: Appointment[];
   addAppointment: (appt: Appointment) => void;
   deleteAppointment: (id: string) => void;
-  setAppointments: React.Dispatch<React.SetStateAction<Appointment[]>>; // Added setAppointments
+  setAppointments: React.Dispatch<React.SetStateAction<Appointment[]>>;
+  // API integration
+  isLoading: boolean;
+  error: string | null;
+  fetchAppointments: (params: FetchEventsParams) => Promise<void>;
+  clearError: () => void;
 }
 
 const AppointmentsContext = createContext<AppointmentsContextValue | undefined>(
@@ -16,14 +23,42 @@ const AppointmentsContext = createContext<AppointmentsContextValue | undefined>(
 export const AppointmentsProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [appointments, setAppointments] = useState<Appointment[]>(
-    getMockAppointments()
-  );
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchAppointments = useCallback(async (params: FetchEventsParams) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetchEvents(params);
+      
+      if (response.success) {
+        const transformedAppointments = response.events.map(backendToAppointment);
+        setAppointments(transformedAppointments);
+        console.log(`Fetched ${transformedAppointments.length} appointments from API`);
+      } else {
+        setError(response.error || 'Failed to fetch appointments');
+        console.error('API Error:', response.error);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      setError(errorMessage);
+      console.error('Fetch error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
 
   const addAppointment = (appt: Appointment) => {
     const appointmentWithId = {
       ...appt,
-      id: appt.id || crypto.randomUUID(), // Ensure a unique ID is generated if not provided
+      id: appt.id || crypto.randomUUID(),
     };
     console.log('Adding appointment:', appointmentWithId);
     setAppointments((prev) => [...prev, appointmentWithId]);
@@ -40,7 +75,11 @@ export const AppointmentsProvider: React.FC<{ children: React.ReactNode }> = ({
         addAppointment,
         deleteAppointment,
         setAppointments,
-      }} // Added setAppointments to context value
+        isLoading,
+        error,
+        fetchAppointments,
+        clearError,
+      }}
     >
       {children}
     </AppointmentsContext.Provider>

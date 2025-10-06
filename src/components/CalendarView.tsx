@@ -12,10 +12,11 @@ import {
   DialogContent,
   DialogActions,
   Typography,
+  CircularProgress,
 } from '@mui/material';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { useAppointments } from '../context/AppointmentsContext';
 import { Appointment } from '../types';
 import { updateAppointment } from '../utils';
@@ -23,10 +24,19 @@ import EventDetailsModal from './EventDetailsModal';
 import AppointmentDetailsModal from './AppointmentModal';
 import { format } from 'date-fns';
 import { appointmentToCalendarEvent } from '../transformers';
+import { getCalendarDateRange } from '../services/api';
 
 const CalendarView = () => {
-  const { appointments, addAppointment, setAppointments, deleteAppointment } =
-    useAppointments();
+  const { 
+    appointments, 
+    addAppointment, 
+    setAppointments, 
+    deleteAppointment,
+    isLoading,
+    error,
+    fetchAppointments,
+    clearError
+  } = useAppointments();
 
   const [popupEvent, setPopupEvent] = useState<any | null>(null);
   const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
@@ -40,6 +50,24 @@ const CalendarView = () => {
     severity: 'success' | 'error';
     key: number;
   }>({ open: false, message: '', severity: 'success', key: 0 });
+
+  const calendarRef = useRef<FullCalendar>(null);
+
+  // Handle calendar date range changes
+  const handleDatesSet = async (dateInfo: any) => {
+    console.log('Calendar dates changed:', dateInfo);
+    const dateRange = getCalendarDateRange(dateInfo.view);
+    await fetchAppointments(dateRange);
+  };
+
+  // Initial data fetch when component mounts
+  useEffect(() => {
+    if (calendarRef.current) {
+      const calendar = calendarRef.current.getApi();
+      const dateRange = getCalendarDateRange(calendar.view);
+      fetchAppointments(dateRange);
+    }
+  }, []);
 
   const showSnackbar = (
     message: string,
@@ -138,11 +166,22 @@ const CalendarView = () => {
     <>
       <Box
         display="flex"
-        justifyContent="flex-end"
+        justifyContent="space-between"
         alignItems="center"
         mt={2}
         mb={1}
       >
+        <Box display="flex" alignItems="center" gap={2}>
+          {isLoading && (
+            <Box display="flex" alignItems="center" gap={1}>
+              <CircularProgress size={20} />
+              <Typography variant="body2" color="text.secondary">
+                Loading appointments...
+              </Typography>
+            </Box>
+          )}
+        </Box>
+        
         <Button
           variant="contained"
           onClick={() => {
@@ -161,8 +200,37 @@ const CalendarView = () => {
           New Appointment
         </Button>
       </Box>
-      <Paper sx={{ p: 2 }}>
+
+      {error && (
+        <Alert 
+          severity="error" 
+          onClose={clearError}
+          sx={{ mb: 2 }}
+        >
+          {error}
+        </Alert>
+      )}
+
+      <Paper sx={{ p: 2, position: 'relative' }}>
+        {isLoading && (
+          <Box
+            position="absolute"
+            top={0}
+            left={0}
+            right={0}
+            bottom={0}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            bgcolor="rgba(255, 255, 255, 0.8)"
+            zIndex={1000}
+          >
+            <CircularProgress />
+          </Box>
+        )}
+        
         <FullCalendar
+          ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView="timeGridWeek"
           slotDuration="00:15:00"
@@ -190,6 +258,7 @@ const CalendarView = () => {
           eventClick={handleEventClick} // Add right-click handler
           eventDrop={handleEventDrop} // Handle event drag-and-drop
           eventResize={handleEventResize} // Handle event resizing
+          datesSet={handleDatesSet} // Handle date range changes
         />
       </Paper>
 
