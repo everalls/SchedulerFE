@@ -24,18 +24,23 @@ import EventDetailsModal from './EventDetailsModal';
 import AppointmentDetailsModal from './AppointmentModal';
 import { format } from 'date-fns';
 import { appointmentToCalendarEvent } from '../transformers';
-import { getCalendarDateRange } from '../services/api';
+import {
+  getCalendarDateRange,
+  createBooking,
+  updateBooking,
+  deleteBooking,
+} from '../services/api';
 
 const CalendarView = () => {
-  const { 
-    appointments, 
-    addAppointment, 
-    setAppointments, 
+  const {
+    appointments,
+    addAppointment,
+    setAppointments,
     deleteAppointment,
     isLoading,
     error,
     fetchAppointments,
-    clearError
+    clearError,
   } = useAppointments();
 
   const [popupEvent, setPopupEvent] = useState<any | null>(null);
@@ -121,39 +126,87 @@ const CalendarView = () => {
     setPopupEvent(null);
   };
 
-  const handleEventDrop = (info: any) => {
+  const handleEventDrop = async (info: any) => {
     const { id } = info.event;
     const updatedStart = info.event.start?.toISOString();
     const updatedEnd = info.event.end?.toISOString();
 
     if (id && updatedStart && updatedEnd) {
-      setAppointments((prev) =>
-        updateAppointment(prev, id, {
-          startTime: updatedStart,
-          endTime: updatedEnd,
-        })
-      );
-      showSnackbar('Appointment time updated', 'success');
+      // Find the appointment to get all its data
+      const appointment = appointments.find((a) => a.id === id);
+      if (!appointment) {
+        showSnackbar('Appointment not found', 'error');
+        info.revert(); // Revert the drag if appointment not found
+        return;
+      }
+
+      // Update appointment with new times
+      const updatedAppointment = {
+        ...appointment,
+        startTime: updatedStart,
+        endTime: updatedEnd,
+      };
+
+      // Call API to update
+      const result = await updateBooking(updatedAppointment);
+      if (result.success) {
+        showSnackbar('Appointment time updated', 'success');
+
+        // Refresh calendar data from API
+        if (calendarRef.current) {
+          const calendar = calendarRef.current.getApi();
+          const dateRange = getCalendarDateRange(calendar.view);
+          await fetchAppointments(dateRange);
+        }
+      } else {
+        showSnackbar(result.error || 'Failed to update appointment', 'error');
+        info.revert(); // Revert the drag if API call failed
+      }
     } else {
       showSnackbar('Invalid event data', 'error');
+      info.revert();
     }
   };
 
-  const handleEventResize = (info: any) => {
+  const handleEventResize = async (info: any) => {
     const { id } = info.event;
     const updatedStart = info.event.start?.toISOString();
     const updatedEnd = info.event.end?.toISOString();
 
     if (id && updatedStart && updatedEnd) {
-      setAppointments((prev) =>
-        updateAppointment(prev, id, {
-          startTime: updatedStart,
-          endTime: updatedEnd,
-        })
-      );
-      showSnackbar('Appointment time updated', 'success');
+      // Find the appointment to get all its data
+      const appointment = appointments.find((a) => a.id === id);
+      if (!appointment) {
+        showSnackbar('Appointment not found', 'error');
+        info.revert(); // Revert the resize if appointment not found
+        return;
+      }
+
+      // Update appointment with new times
+      const updatedAppointment = {
+        ...appointment,
+        startTime: updatedStart,
+        endTime: updatedEnd,
+      };
+
+      // Call API to update
+      const result = await updateBooking(updatedAppointment);
+      if (result.success) {
+        showSnackbar('Appointment time updated', 'success');
+
+        // Refresh calendar data from API
+        if (calendarRef.current) {
+          const calendar = calendarRef.current.getApi();
+          const dateRange = getCalendarDateRange(calendar.view);
+          await fetchAppointments(dateRange);
+        }
+      } else {
+        showSnackbar(result.error || 'Failed to update appointment', 'error');
+        info.revert(); // Revert the resize if API call failed
+      }
     } else {
       showSnackbar('Invalid event data', 'error');
+      info.revert();
     }
   };
 
@@ -181,7 +234,7 @@ const CalendarView = () => {
             </Box>
           )}
         </Box>
-        
+
         <Button
           variant="contained"
           onClick={() => {
@@ -202,11 +255,7 @@ const CalendarView = () => {
       </Box>
 
       {error && (
-        <Alert 
-          severity="error" 
-          onClose={clearError}
-          sx={{ mb: 2 }}
-        >
+        <Alert severity="error" onClose={clearError} sx={{ mb: 2 }}>
           {error}
         </Alert>
       )}
@@ -228,12 +277,17 @@ const CalendarView = () => {
             <CircularProgress />
           </Box>
         )}
-        
+
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView="timeGridWeek"
           slotDuration="00:15:00"
+          scrollTime="08:00:00"
+          scrollTimeReset={false}
+          slotMinTime="00:00:00"
+          slotMaxTime="24:00:00"
+          expandRows={true}
           // slotLabelInterval="00:15:00"
           slotLabelFormat={{
             hour: 'numeric',
@@ -251,7 +305,7 @@ const CalendarView = () => {
               <span>{eventInfo.event.title || 'No Title'}</span>
             );
           }}
-          height="80vh"
+          height="calc(100vh - 200px)"
           selectable
           editable // Enable drag-and-drop and resizing
           select={handleDateSelect}
@@ -344,10 +398,25 @@ const CalendarView = () => {
           <Button
             color="error"
             variant="contained"
-            onClick={() => {
+            onClick={async () => {
               if (deleteTargetEvent?.id) {
-                deleteAppointment(deleteTargetEvent.id);
-                showSnackbar('Appointment deleted', 'success');
+                // Call API to delete
+                const result = await deleteBooking(deleteTargetEvent.id);
+                if (result.success) {
+                  showSnackbar('Appointment deleted successfully', 'success');
+
+                  // Refresh calendar data from API
+                  if (calendarRef.current) {
+                    const calendar = calendarRef.current.getApi();
+                    const dateRange = getCalendarDateRange(calendar.view);
+                    await fetchAppointments(dateRange);
+                  }
+                } else {
+                  showSnackbar(
+                    result.error || 'Failed to delete appointment',
+                    'error'
+                  );
+                }
               } else {
                 showSnackbar('Invalid event data', 'error');
               }
@@ -368,17 +437,46 @@ const CalendarView = () => {
         }}
         activeAppointment={activeAppointment}
         setActiveAppointment={setActiveAppointment}
-        onSave={(appointment) => {
+        onSave={async (appointment) => {
           // If the id exists in store, update; otherwise create
           const exists = appointments.some((a) => a.id === appointment.id);
+
           if (exists && appointment.id) {
-            setAppointments((prev) =>
-              updateAppointment(prev, appointment.id, appointment)
-            );
-            showSnackbar('Appointment updated', 'success');
+            // Update existing booking
+            const result = await updateBooking(appointment);
+            if (result.success) {
+              showSnackbar('Appointment updated successfully', 'success');
+
+              // Refresh calendar data from API
+              if (calendarRef.current) {
+                const calendar = calendarRef.current.getApi();
+                const dateRange = getCalendarDateRange(calendar.view);
+                await fetchAppointments(dateRange);
+              }
+            } else {
+              showSnackbar(
+                result.error || 'Failed to update appointment',
+                'error'
+              );
+            }
           } else {
-            addAppointment(appointment);
-            showSnackbar('Appointment created', 'success');
+            // Create new booking
+            const result = await createBooking(appointment);
+            if (result.success) {
+              showSnackbar('Appointment created successfully', 'success');
+
+              // Refresh calendar data from API
+              if (calendarRef.current) {
+                const calendar = calendarRef.current.getApi();
+                const dateRange = getCalendarDateRange(calendar.view);
+                await fetchAppointments(dateRange);
+              }
+            } else {
+              showSnackbar(
+                result.error || 'Failed to create appointment',
+                'error'
+              );
+            }
           }
         }}
       />

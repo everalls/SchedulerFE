@@ -4,6 +4,11 @@ export type Appointment = {
   service: string;
   provider: string;
   room: string;
+  // IDs for API integration
+  clientId?: number;
+  serviceId?: number;
+  providerId?: number;
+  roomId?: number;
 
   startTime: string; // ISO 8601 format
   endTime: string; // ISO 8601 format
@@ -23,11 +28,10 @@ export interface BackendAbsence {
 }
 
 export interface BackendLocation {
-  isLocked: boolean;
   description: string;
   maxCapacity: number;
   availableServices: BackendServiceRef[];
-  absences: BackendAbsence[];
+  customData: string;
   calendarId: number;
   id: number;
   name: string;
@@ -39,12 +43,9 @@ export interface BackendPreferrableResource {
 }
 
 export interface BackendWorker {
-  isLocked: boolean;
   description: string;
   availableServices: BackendServiceRef[];
-  absences: BackendAbsence[];
-  customData?: string;
-  preferrableResources: BackendPreferrableResource[];
+  customData: string;
   calendarId: number;
   id: number;
   name: string;
@@ -52,7 +53,21 @@ export interface BackendWorker {
 
 export interface BackendClient {
   description: string;
-  preferrableResources: BackendPreferrableResource[];
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  phoneNumber: string;
+  address: string;
+  email: string;
+  customData: string;
+  preferrableResources: any;
+  calendarId: number;
+  id: number;
+  name: string;
+}
+
+export interface BackendService {
+  description: string;
   calendarId: number;
   id: number;
   name: string;
@@ -70,4 +85,27 @@ export interface BackendCalendarEvent {
   calendarId: number; // assume const 2 for now
   id: number;
   name: string; // booking name
+}
+
+// Booking API request types
+export interface BookingResourceRef {
+  id: number;
+  IsLocked: boolean;
+}
+
+export interface CreateBookingRequest {
+  calendarId: number;
+  name: string;
+  description: string;
+  starting: string;
+  ending: string;
+  locations: BookingResourceRef[];
+  workers: BookingResourceRef[];
+  clients: BookingResourceRef[];
+  servicesIds: number[];
+  isLocked: boolean;
+}
+
+export interface UpdateBookingRequest extends CreateBookingRequest {
+  id: number;
 }

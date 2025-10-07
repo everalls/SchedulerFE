@@ -7,12 +7,23 @@ export const backendToAppointment = (be: BackendCalendarEvent): Appointment => {
   const provider = be.workers?.[0]?.name ?? '';
   const room = be.locations?.[0]?.name ?? '';
 
+  // Extract IDs for API integration
+  const clientId = be.clients?.[0]?.id;
+  const serviceId = be.services?.[0]?.id;
+  const providerId = be.workers?.[0]?.id;
+  const roomId = be.locations?.[0]?.id;
+
   return {
     id: String(be.id),
     clientName,
     service,
     provider,
     room,
+    // IDs for API integration
+    clientId,
+    serviceId,
+    providerId,
+    roomId,
     // Preserve the backend timezone offsets; store as received
     startTime: be.starting,
     endTime: be.ending,

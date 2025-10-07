@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -9,8 +9,20 @@ import {
   Stack,
   Autocomplete,
 } from '@mui/material';
-import { Appointment } from '../types';
+import {
+  Appointment,
+  BackendClient,
+  BackendLocation,
+  BackendService,
+  BackendWorker,
+} from '../types';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import {
+  fetchClients,
+  fetchLocations,
+  fetchServices,
+  fetchWorkers,
+} from '../services/api';
 
 interface Props {
   open: boolean;
@@ -29,80 +41,38 @@ const AppointmentDetailsModal: React.FC<Props> = ({
   setActiveAppointment,
   onSave, // New prop for save function
 }) => {
-  // Mock data arrays
-  const clientOptions = [
-    'John Smith',
-    'Sarah Davis',
-    'Michael Johnson',
-    'Emily Wilson',
-    'David Brown',
-    'Lisa Anderson',
-    'Robert Taylor',
-    'Jennifer Martinez',
-    'Christopher Lee',
-    'Amanda Garcia',
-    'James Wilson',
-    'Maria Rodriguez',
-    'Kevin Thompson',
-    'Rachel Green',
-    'Daniel Kim',
-    'Jessica White',
-    'Matthew Davis',
-    'Ashley Brown',
-    'Ryan Miller',
-    'Nicole Taylor',
-  ];
+  // State for API data
+  const [clients, setClients] = useState<BackendClient[]>([]);
+  const [services, setServices] = useState<BackendService[]>([]);
+  const [providers, setProviders] = useState<BackendWorker[]>([]);
+  const [rooms, setRooms] = useState<BackendLocation[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const serviceOptions = [
-    'Massage Therapy',
-    'Deep Tissue Massage',
-    'Swedish Massage',
-    'Physiotherapy',
-    'Sports Therapy',
-    'Chiropractic',
-    'Consultation',
-    'Follow-up Visit',
-    'Initial Assessment',
-    'Rehabilitation',
-    'Pain Management',
-    'Wellness Check',
-    'Therapeutic Exercise',
-    'Manual Therapy',
-  ];
+  // Fetch API data when modal opens
+  useEffect(() => {
+    if (open) {
+      setIsLoading(true);
+      Promise.all([
+        fetchClients(),
+        fetchServices(),
+        fetchWorkers(),
+        fetchLocations(),
+      ])
+        .then(([clientsData, servicesData, providersData, roomsData]) => {
+          setClients(clientsData);
+          setServices(servicesData);
+          setProviders(providersData);
+          setRooms(roomsData);
+        })
+        .catch((error) => {
+          console.error('Error fetching form data:', error);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    }
+  }, [open]);
 
-  const providerOptions = [
-    'Dr. Sarah Johnson',
-    'Dr. Michael Chen',
-    'Dr. Emily Rodriguez',
-    'Dr. David Thompson',
-    'Dr. Lisa Wang',
-    'Dr. James Wilson',
-    'Dr. Maria Garcia',
-    'Dr. Robert Kim',
-    'Dr. Jennifer Lee',
-    'Dr. Christopher Brown',
-    'Dr. Amanda Davis',
-    'Dr. Kevin Martinez',
-    'Dr. Rachel Taylor',
-  ];
-
-  const roomOptions = [
-    'Room 101',
-    'Room 102',
-    'Room 103',
-    'Room 201',
-    'Room 202',
-    'Room 203',
-    'Conference Room A',
-    'Conference Room B',
-    'Room 301',
-    'Room 302',
-    'Room 303',
-    'Private Suite 1',
-    'Private Suite 2',
-    'Therapy Room 1',
-    'Therapy Room 2',
-  ];
   React.useEffect(() => {
     if (open && !activeAppointment) {
       setActiveAppointment({
@@ -117,9 +87,36 @@ const AppointmentDetailsModal: React.FC<Props> = ({
     }
   }, [open, activeAppointment, setActiveAppointment]);
 
-  const handleChange = (field: keyof Appointment, value: string) => {
+  const handleChange = (field: keyof Appointment, value: string | number) => {
     if (activeAppointment) {
       setActiveAppointment({ ...activeAppointment, [field]: value });
+    }
+  };
+
+  const handleObjectChange = (field: keyof Appointment, object: any) => {
+    if (activeAppointment && object) {
+      const nameField =
+        field === 'clientName'
+          ? 'clientName'
+          : field === 'service'
+          ? 'service'
+          : field === 'provider'
+          ? 'provider'
+          : 'room';
+      const idField =
+        field === 'clientName'
+          ? 'clientId'
+          : field === 'service'
+          ? 'serviceId'
+          : field === 'provider'
+          ? 'providerId'
+          : 'roomId';
+
+      setActiveAppointment({
+        ...activeAppointment,
+        [nameField]: object.name,
+        [idField]: object.id,
+      });
     }
   };
 
@@ -151,11 +148,16 @@ const AppointmentDetailsModal: React.FC<Props> = ({
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <Autocomplete
-            options={clientOptions}
-            value={activeAppointment?.clientName || null}
-            onChange={(event, newValue) =>
-              handleChange('clientName', newValue || '')
+            options={clients}
+            getOptionLabel={(option) => option.name}
+            value={
+              clients.find((c) => c.name === activeAppointment?.clientName) ||
+              null
             }
+            onChange={(event, newValue) =>
+              handleObjectChange('clientName', newValue)
+            }
+            loading={isLoading}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -174,11 +176,16 @@ const AppointmentDetailsModal: React.FC<Props> = ({
             }}
           />
           <Autocomplete
-            options={serviceOptions}
-            value={activeAppointment?.service || null}
-            onChange={(event, newValue) =>
-              handleChange('service', newValue || '')
+            options={services}
+            getOptionLabel={(option) => option.name}
+            value={
+              services.find((s) => s.name === activeAppointment?.service) ||
+              null
             }
+            onChange={(event, newValue) =>
+              handleObjectChange('service', newValue)
+            }
+            loading={isLoading}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -195,11 +202,16 @@ const AppointmentDetailsModal: React.FC<Props> = ({
             }}
           />
           <Autocomplete
-            options={providerOptions}
-            value={activeAppointment?.provider || null}
-            onChange={(event, newValue) =>
-              handleChange('provider', newValue || '')
+            options={providers}
+            getOptionLabel={(option) => option.name}
+            value={
+              providers.find((p) => p.name === activeAppointment?.provider) ||
+              null
             }
+            onChange={(event, newValue) =>
+              handleObjectChange('provider', newValue)
+            }
+            loading={isLoading}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -216,9 +228,13 @@ const AppointmentDetailsModal: React.FC<Props> = ({
             }}
           />
           <Autocomplete
-            options={roomOptions}
-            value={activeAppointment?.room || null}
-            onChange={(event, newValue) => handleChange('room', newValue || '')}
+            options={rooms}
+            getOptionLabel={(option) => option.name}
+            value={
+              rooms.find((r) => r.name === activeAppointment?.room) || null
+            }
+            onChange={(event, newValue) => handleObjectChange('room', newValue)}
+            loading={isLoading}
             renderInput={(params) => (
               <TextField
                 {...params}
