@@ -21,7 +21,7 @@ const BACKEND_API_URL =
 
 const API_BASE_URL = isDevelopment
   ? '/api' // Proxy through Vite dev server (fixes CORS in development)
-  : `https://thingproxy.freeboard.io/fetch/${BACKEND_API_URL}`; // CORS proxy for GitHub Pages
+  : `https://corsproxy.io/?${encodeURIComponent(BACKEND_API_URL)}`; // CORS proxy for GitHub Pages
 
 const CALENDAR_ID = 2; // Constant for now, will come from Auth later
 
