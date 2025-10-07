@@ -14,9 +14,15 @@ import {
 const isDevelopment =
   window.location.hostname === 'localhost' ||
   window.location.hostname === '127.0.0.1';
+
+// Base URL for the API
+const BACKEND_API_URL =
+  'https://schedule-spa-api-c7bmhvb4b0fgcrc9.canadacentral-01.azurewebsites.net/api';
+
 const API_BASE_URL = isDevelopment
   ? '/api' // Proxy through Vite dev server (fixes CORS in development)
-  : 'https://thingproxy.freeboard.io/fetch/https://schedule-spa-api-c7bmhvb4b0fgcrc9.canadacentral-01.azurewebsites.net/api'; // CORS proxy for GitHub Pages
+  : `https://thingproxy.freeboard.io/fetch/${BACKEND_API_URL}`; // CORS proxy for GitHub Pages
+
 const CALENDAR_ID = 2; // Constant for now, will come from Auth later
 
 export interface ApiError {
