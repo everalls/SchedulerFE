@@ -2,6 +2,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
+import '../styles/calendar.css';
 import {
   Box,
   Button,
@@ -217,50 +218,22 @@ const CalendarView = () => {
 
   return (
     <>
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mt={2}
-        mb={1}
-      >
-        <Box display="flex" alignItems="center" gap={2}>
-          {isLoading && (
-            <Box display="flex" alignItems="center" gap={1}>
-              <CircularProgress size={20} />
-              <Typography variant="body2" color="text.secondary">
-                Loading appointments...
-              </Typography>
-            </Box>
-          )}
-        </Box>
-
-        <Button
-          variant="contained"
-          onClick={() => {
-            setActiveAppointment({
-              id: '',
-              clientName: '',
-              service: '',
-              provider: '',
-              room: '',
-              startTime: '',
-              endTime: '',
-            });
-            setAppointmentModalOpen(true);
-          }}
-        >
-          New Appointment
-        </Button>
-      </Box>
-
       {error && (
         <Alert severity="error" onClose={clearError} sx={{ mb: 2 }}>
           {error}
         </Alert>
       )}
 
-      <Paper sx={{ p: 2, position: 'relative' }}>
+      <Paper
+        elevation={0}
+        sx={{
+          p: 3,
+          position: 'relative',
+          border: '1px solid #dadce0',
+          borderRadius: '8px',
+          backgroundColor: '#fff',
+        }}
+      >
         {isLoading && (
           <Box
             position="absolute"
@@ -288,15 +261,24 @@ const CalendarView = () => {
           slotMinTime="00:00:00"
           slotMaxTime="24:00:00"
           expandRows={true}
+          allDaySlot={false}
           // slotLabelInterval="00:15:00"
           slotLabelFormat={{
             hour: 'numeric',
             minute: '2-digit',
           }}
           headerToolbar={{
-            left: 'prev,next today',
+            left: 'schedulerTitle prev,next today',
             center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridDay',
+            right: 'timeGridWeek,timeGridDay',
+          }}
+          customButtons={{
+            schedulerTitle: {
+              text: 'Scheduler',
+              click: function () {
+                // No action - just a label
+              },
+            },
           }}
           events={events}
           eventContent={(eventInfo) => {
@@ -305,7 +287,7 @@ const CalendarView = () => {
               <span>{eventInfo.event.title || 'No Title'}</span>
             );
           }}
-          height="calc(100vh - 200px)"
+          height="calc(100vh - 100px)"
           selectable
           editable // Enable drag-and-drop and resizing
           select={handleDateSelect}
