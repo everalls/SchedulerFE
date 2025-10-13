@@ -43,27 +43,25 @@
 .fc-button {
   font-family: 'Roboto', sans-serif;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   text-transform: none;
   border: 1px solid #dadce0;
   border-radius: 4px;
-  background-color: #fff;
-  color: #3c4043;
+  background-color: #f8f9fa;
+  color: #5f6368;
   padding: 6px 16px;
   box-shadow: none;
   transition: all 0.2s;
 }
 
 .fc-button:hover {
-  background-color: #f8f9fa;
+  background-color: #e8eaed;
   border-color: #dadce0;
-  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3),
-    0 1px 3px 1px rgba(60, 64, 67, 0.15);
+  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.15);
 }
 
 .fc-button:focus {
-  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3),
-    0 1px 3px 1px rgba(60, 64, 67, 0.15);
+  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.15);
 }
 
 /* Active/Selected button - Gmail blue */
@@ -81,20 +79,49 @@
 
 /* Primary buttons (Today) - Gmail blue */
 .fc-today-button {
-  background-color: #fff !important;
-  color: #1967d2 !important;
+  background-color: #f8f9fa !important;
+  color: #5f6368 !important;
   border-color: #dadce0 !important;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .fc-today-button:hover {
-  background-color: #f8f9fa !important;
+  background-color: #e8eaed !important;
 }
 
 /* Navigation buttons (prev/next) */
 .fc-prev-button,
 .fc-next-button {
   padding: 6px 12px !important;
+  background-color: #f8f9fa !important;
+  color: #5f6368 !important;
+  border-color: #dadce0 !important;
+}
+
+.fc-prev-button:hover,
+.fc-next-button:hover {
+  background-color: #e8eaed !important;
+}
+
+/* View buttons (Week/Day) */
+.fc-timeGridWeek-button,
+.fc-timeGridDay-button {
+  background-color: #f8f9fa !important;
+  color: #5f6368 !important;
+  border-color: #dadce0 !important;
+}
+
+.fc-timeGridWeek-button:hover,
+.fc-timeGridDay-button:hover {
+  background-color: #e8eaed !important;
+}
+
+/* Active view button keeps the blue */
+.fc-timeGridWeek-button.fc-button-active,
+.fc-timeGridDay-button.fc-button-active {
+  background-color: #e8f0fe !important;
+  color: #1967d2 !important;
+  border-color: #e8f0fe !important;
 }
 
 /* Button group spacing */
