@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -6,10 +6,23 @@ import {
   DialogActions,
   Button,
   TextField,
-  MenuItem,
   Stack,
+  Autocomplete,
 } from '@mui/material';
-import { Appointment } from '../types';
+import {
+  Appointment,
+  BackendClient,
+  BackendLocation,
+  BackendService,
+  BackendWorker,
+} from '../types';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import {
+  fetchClients,
+  fetchLocations,
+  fetchServices,
+  fetchWorkers,
+} from '../services/api';
 
 interface Props {
   open: boolean;
@@ -28,6 +41,38 @@ const AppointmentDetailsModal: React.FC<Props> = ({
   setActiveAppointment,
   onSave, // New prop for save function
 }) => {
+  // State for API data
+  const [clients, setClients] = useState<BackendClient[]>([]);
+  const [services, setServices] = useState<BackendService[]>([]);
+  const [providers, setProviders] = useState<BackendWorker[]>([]);
+  const [rooms, setRooms] = useState<BackendLocation[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Fetch API data when modal opens
+  useEffect(() => {
+    if (open) {
+      setIsLoading(true);
+      Promise.all([
+        fetchClients(),
+        fetchServices(),
+        fetchWorkers(),
+        fetchLocations(),
+      ])
+        .then(([clientsData, servicesData, providersData, roomsData]) => {
+          setClients(clientsData);
+          setServices(servicesData);
+          setProviders(providersData);
+          setRooms(roomsData);
+        })
+        .catch((error) => {
+          console.error('Error fetching form data:', error);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    }
+  }, [open]);
+
   React.useEffect(() => {
     if (open && !activeAppointment) {
       setActiveAppointment({
@@ -42,9 +87,36 @@ const AppointmentDetailsModal: React.FC<Props> = ({
     }
   }, [open, activeAppointment, setActiveAppointment]);
 
-  const handleChange = (field: keyof Appointment, value: string) => {
+  const handleChange = (field: keyof Appointment, value: string | number) => {
     if (activeAppointment) {
       setActiveAppointment({ ...activeAppointment, [field]: value });
+    }
+  };
+
+  const handleObjectChange = (field: keyof Appointment, object: any) => {
+    if (activeAppointment && object) {
+      const nameField =
+        field === 'clientName'
+          ? 'clientName'
+          : field === 'service'
+          ? 'service'
+          : field === 'provider'
+          ? 'provider'
+          : 'room';
+      const idField =
+        field === 'clientName'
+          ? 'clientId'
+          : field === 'service'
+          ? 'serviceId'
+          : field === 'provider'
+          ? 'providerId'
+          : 'roomId';
+
+      setActiveAppointment({
+        ...activeAppointment,
+        [nameField]: object.name,
+        [idField]: object.id,
+      });
     }
   };
 
@@ -65,95 +137,153 @@ const AppointmentDetailsModal: React.FC<Props> = ({
     activeAppointment?.startTime &&
     activeAppointment?.endTime;
 
-  const formatDateTime = (dateTime: string) => {
-    return new Date(dateTime).toISOString().slice(0, 16);
-  };
+  const parseToDate = (value: string | null | undefined) =>
+    value ? new Date(value) : null;
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>New Appointment</DialogTitle>
+      <DialogTitle>
+        {activeAppointment?.id ? 'Edit Appointment' : 'New Appointment'}
+      </DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
-          <TextField
-            label="Client Name"
-            value={activeAppointment?.clientName || ''}
-            onChange={(e) => handleChange('clientName', e.target.value)}
-            fullWidth
-            required
-            error={!activeAppointment?.clientName}
-            helperText={
-              !activeAppointment?.clientName ? 'Client Name is required' : ''
+          <Autocomplete
+            options={clients}
+            getOptionLabel={(option) => option.name}
+            value={
+              clients.find((c) => c.name === activeAppointment?.clientName) ||
+              null
             }
-          />
-          <TextField
-            label="Service"
-            value={activeAppointment?.service || ''}
-            onChange={(e) => handleChange('service', e.target.value)}
-            select
-            fullWidth
-            required
-            error={!activeAppointment?.service}
-            helperText={
-              !activeAppointment?.service ? 'Service is required' : ''
+            onChange={(event, newValue) =>
+              handleObjectChange('clientName', newValue)
             }
-          >
-            <MenuItem value="Massage">Massage</MenuItem>
-            <MenuItem value="Physiotherapy">Physiotherapy</MenuItem>
-            <MenuItem value="Consultation">Consultation</MenuItem>
-          </TextField>
-          <TextField
-            label="Provider"
-            value={activeAppointment?.provider || ''}
-            onChange={(e) => handleChange('provider', e.target.value)}
-            fullWidth
-            required
-            error={!activeAppointment?.provider}
-            helperText={
-              !activeAppointment?.provider ? 'Provider is required' : ''
+            loading={isLoading}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Client Name"
+                required
+                error={!activeAppointment?.clientName}
+                helperText={
+                  !activeAppointment?.clientName
+                    ? 'Client Name is required'
+                    : ''
+                }
+              />
+            )}
+            ListboxProps={{
+              style: { maxHeight: '200px' },
+            }}
+          />
+          <Autocomplete
+            options={services}
+            getOptionLabel={(option) => option.name}
+            value={
+              services.find((s) => s.name === activeAppointment?.service) ||
+              null
             }
+            onChange={(event, newValue) =>
+              handleObjectChange('service', newValue)
+            }
+            loading={isLoading}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Service"
+                required
+                error={!activeAppointment?.service}
+                helperText={
+                  !activeAppointment?.service ? 'Service is required' : ''
+                }
+              />
+            )}
+            ListboxProps={{
+              style: { maxHeight: '200px' },
+            }}
           />
-          <TextField
-            label="Room"
-            value={activeAppointment?.room || ''}
-            onChange={(e) => handleChange('room', e.target.value)}
-            fullWidth
-            required
-            error={!activeAppointment?.room}
-            helperText={!activeAppointment?.room ? 'Room is required' : ''}
+          <Autocomplete
+            options={providers}
+            getOptionLabel={(option) => option.name}
+            value={
+              providers.find((p) => p.name === activeAppointment?.provider) ||
+              null
+            }
+            onChange={(event, newValue) =>
+              handleObjectChange('provider', newValue)
+            }
+            loading={isLoading}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Provider"
+                required
+                error={!activeAppointment?.provider}
+                helperText={
+                  !activeAppointment?.provider ? 'Provider is required' : ''
+                }
+              />
+            )}
+            ListboxProps={{
+              style: { maxHeight: '200px' },
+            }}
           />
-          <TextField
+          <Autocomplete
+            options={rooms}
+            getOptionLabel={(option) => option.name}
+            value={
+              rooms.find((r) => r.name === activeAppointment?.room) || null
+            }
+            onChange={(event, newValue) => handleObjectChange('room', newValue)}
+            loading={isLoading}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Room"
+                required
+                error={!activeAppointment?.room}
+                helperText={!activeAppointment?.room ? 'Room is required' : ''}
+              />
+            )}
+            ListboxProps={{
+              style: { maxHeight: '200px' },
+            }}
+          />
+          <DateTimePicker
             label="Start Time"
-            type="datetime-local"
-            value={
-              activeAppointment?.startTime
-                ? formatDateTime(activeAppointment.startTime)
-                : ''
+            value={parseToDate(activeAppointment?.startTime)}
+            onChange={(newValue) =>
+              handleChange('startTime', newValue ? newValue.toISOString() : '')
             }
-            onChange={(e) => handleChange('startTime', e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-            required
-            error={!activeAppointment?.startTime}
-            helperText={
-              !activeAppointment?.startTime ? 'Start Time is required' : ''
-            }
+            minutesStep={15}
+            slotProps={{
+              textField: {
+                fullWidth: true,
+                required: true,
+                error: !activeAppointment?.startTime,
+                helperText: !activeAppointment?.startTime
+                  ? 'Start Time is required'
+                  : '',
+              },
+            }}
           />
-          <TextField
+
+          <DateTimePicker
             label="End Time"
-            type="datetime-local"
-            value={
-              activeAppointment?.endTime
-                ? formatDateTime(activeAppointment.endTime)
-                : ''
+            value={parseToDate(activeAppointment?.endTime)}
+            onChange={(newValue) =>
+              handleChange('endTime', newValue ? newValue.toISOString() : '')
             }
-            onChange={(e) => handleChange('endTime', e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-            required
-            error={!activeAppointment?.endTime}
-            helperText={
-              !activeAppointment?.endTime ? 'End Time is required' : ''
-            }
+            minutesStep={15}
+            slotProps={{
+              textField: {
+                fullWidth: true,
+                required: true,
+                error: !activeAppointment?.endTime,
+                helperText: !activeAppointment?.endTime
+                  ? 'End Time is required'
+                  : '',
+              },
+            }}
           />
         </Stack>
       </DialogContent>

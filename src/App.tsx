@@ -4,18 +4,23 @@ import CalendarView from './components/CalendarView';
 
 const App: React.FC = () => {
   return (
-    <Container>
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mt={2}
-        mb={2}
+    <Box
+      sx={{
+        backgroundColor: '#f8f9fa',
+        minHeight: '100vh',
+        fontFamily: 'Roboto, sans-serif',
+      }}
+    >
+      <Container
+        maxWidth={false}
+        sx={{
+          maxWidth: '1600px',
+          py: 3,
+        }}
       >
-        <Typography variant="h4">Scheduler MVP</Typography>
-      </Box>
-      <CalendarView />
-    </Container>
+        <CalendarView />
+      </Container>
+    </Box>
   );
 };
 
