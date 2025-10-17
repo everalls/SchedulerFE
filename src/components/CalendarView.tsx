@@ -114,12 +114,72 @@ const CalendarView = () => {
       return;
     }
 
+    // Check if this is a conflicting event and generate explanation if needed
+    let conflictExplanation = '';
+    if (info.event.extendedProps.isConflicting) {
+      // Find the conflicting appointment
+      const conflictingAppointment = appointments.find(
+        (a) => a.id === info.event.id
+      );
+      if (conflictingAppointment) {
+        // Find conflicting appointments using the same logic as handleConflictIconClick
+        const conflictingWith = appointments.filter((otherAppointment) => {
+          if (otherAppointment.id === info.event.id) return false;
+
+          // Check time overlap and resource conflict
+          const start1 = new Date(conflictingAppointment.startTime).getTime();
+          const end1 = new Date(conflictingAppointment.endTime).getTime();
+          const start2 = new Date(otherAppointment.startTime).getTime();
+          const end2 = new Date(otherAppointment.endTime).getTime();
+
+          const hasTimeOverlap = start1 < end2 && start2 < end1;
+          const hasResourceConflict =
+            conflictingAppointment.provider === otherAppointment.provider ||
+            conflictingAppointment.room === otherAppointment.room;
+
+          return hasTimeOverlap && hasResourceConflict;
+        });
+
+        if (conflictingWith.length > 0) {
+          const firstConflict = conflictingWith[0];
+          const sharedResources = [];
+
+          // Check which specific resources are conflicting
+          if (
+            conflictingAppointment.provider === firstConflict.provider &&
+            conflictingAppointment.provider
+          ) {
+            sharedResources.push(
+              `provider "${conflictingAppointment.provider}"`
+            );
+          }
+          if (
+            conflictingAppointment.room === firstConflict.room &&
+            conflictingAppointment.room
+          ) {
+            sharedResources.push(`room "${conflictingAppointment.room}"`);
+          }
+
+          if (sharedResources.length > 0) {
+            conflictExplanation = `Same time slot with ${sharedResources.join(
+              ' and '
+            )}`;
+          } else {
+            conflictExplanation = 'Same time slot with another appointment';
+          }
+        }
+      }
+    }
+
     setPopupEvent({
       id: info.event.id,
       title: info.event.title,
       start: info.event.start?.toISOString() || '',
       end: info.event.end?.toISOString() || '',
-      extendedProps: info.event.extendedProps,
+      extendedProps: {
+        ...info.event.extendedProps,
+        conflictExplanation: conflictExplanation, // Add the generated explanation
+      },
     });
   };
 
@@ -211,8 +271,81 @@ const CalendarView = () => {
     }
   };
 
+  const handleConflictIconClick = (eventId: string) => {
+    // Find the conflicting appointment
+    const conflictingAppointment = appointments.find((a) => a.id === eventId);
+    if (!conflictingAppointment) return;
+
+    // Find conflicting appointments using the existing utility functions
+    const conflictingWith = appointments.filter((otherAppointment) => {
+      if (otherAppointment.id === eventId) return false;
+
+      // Check time overlap and resource conflict using utility functions
+      const start1 = new Date(conflictingAppointment.startTime).getTime();
+      const end1 = new Date(conflictingAppointment.endTime).getTime();
+      const start2 = new Date(otherAppointment.startTime).getTime();
+      const end2 = new Date(otherAppointment.endTime).getTime();
+
+      const hasTimeOverlap = start1 < end2 && start2 < end1;
+      const hasResourceConflict =
+        conflictingAppointment.provider === otherAppointment.provider ||
+        conflictingAppointment.room === otherAppointment.room;
+
+      return hasTimeOverlap && hasResourceConflict;
+    });
+
+    // Generate conflict explanation
+    let conflictExplanation = '';
+    if (conflictingWith.length > 0) {
+      const firstConflict = conflictingWith[0];
+      const sharedResources = [];
+
+      // Check which specific resources are conflicting
+      if (
+        conflictingAppointment.provider === firstConflict.provider &&
+        conflictingAppointment.provider
+      ) {
+        sharedResources.push(`provider "${conflictingAppointment.provider}"`);
+      }
+      if (
+        conflictingAppointment.room === firstConflict.room &&
+        conflictingAppointment.room
+      ) {
+        sharedResources.push(`room "${conflictingAppointment.room}"`);
+      }
+
+      if (sharedResources.length > 0) {
+        conflictExplanation = `Same time slot with ${sharedResources.join(
+          ' and '
+        )}`;
+      } else {
+        conflictExplanation = 'Same time slot with another appointment';
+      }
+    }
+
+    // Set the popup event to show the modal with conflict info
+    const popupEventData = {
+      id: conflictingAppointment.id,
+      title: `${conflictingAppointment.clientName} - ${conflictingAppointment.service}`,
+      start: conflictingAppointment.startTime,
+      end: conflictingAppointment.endTime,
+      extendedProps: {
+        clientName: conflictingAppointment.clientName,
+        provider: conflictingAppointment.provider,
+        room: conflictingAppointment.room,
+        service: conflictingAppointment.service,
+        isConflicting: true,
+        conflictExplanation: conflictExplanation,
+      },
+    };
+    setPopupEvent(popupEventData);
+  };
+
   const events = useMemo(
-    () => appointments.map(appointmentToCalendarEvent),
+    () =>
+      appointments.map((appointment) =>
+        appointmentToCalendarEvent(appointment, appointments)
+      ),
     [appointments]
   );
 
@@ -259,7 +392,7 @@ const CalendarView = () => {
           snapDuration="00:15:00"
           scrollTime="08:00:00"
           scrollTimeReset={false}
-          slotMinTime="08:00:00"
+          slotMinTime="00:00:00"
           slotMaxTime="24:00:00"
           expandRows={true}
           allDaySlot={false}
@@ -283,9 +416,24 @@ const CalendarView = () => {
           }}
           events={events}
           eventContent={(eventInfo) => {
+            const isConflicting = eventInfo.event.extendedProps.isConflicting;
             return (
-              // TODO: Make it nicer, not just a simple span
-              <span>{eventInfo.event.title || 'No Title'}</span>
+              <>
+                <span className="fc-event-title">
+                  {eventInfo.event.title || 'No Title'}
+                </span>
+                {isConflicting && (
+                  <div
+                    className="fc-conflict-icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleConflictIconClick(eventInfo.event.id);
+                    }}
+                  >
+                    !
+                  </div>
+                )}
+              </>
             );
           }}
           height="calc(100vh - 100px)"
@@ -309,6 +457,13 @@ const CalendarView = () => {
         open={Boolean(popupEvent)}
         popupEvent={popupEvent}
         handleClosePopup={handleClosePopup}
+        showConflictInfo={popupEvent?.extendedProps?.isConflicting || false}
+        conflictExplanation={
+          popupEvent?.extendedProps?.conflictExplanation || ''
+        }
+        onResolveConflict={() => {
+          showSnackbar('Conflict resolution feature coming soon!', 'info');
+        }}
         onRequestDelete={() => {
           // Close details and open confirm dialog with current event as target
           if (popupEvent) {

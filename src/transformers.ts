@@ -1,4 +1,5 @@
 import { Appointment, BackendCalendarEvent } from './types';
+import { hasConflicts, CONFLICT_COLORS } from './utils';
 
 // Choose first entries as primary; fall back to blanks when absent
 export const backendToAppointment = (be: BackendCalendarEvent): Appointment => {
@@ -31,23 +32,33 @@ export const backendToAppointment = (be: BackendCalendarEvent): Appointment => {
 };
 
 // Thin view-model for FullCalendar (avoid global type)
-export const appointmentToCalendarEvent = (appointment: Appointment) => ({
-  id: appointment.id,
-  title: `${appointment.clientName} - ${appointment.service}`.trim() || 'Event',
-  start: appointment.startTime,
-  end: appointment.endTime,
-  editable: true,
-  startEditable: true,
-  durationEditable: true,
-  resourceEditable: true,
-  constraint: null,
-  extendedProps: {
-    clientName: appointment.clientName,
-    provider: appointment.provider,
-    room: appointment.room,
-    service: appointment.service,
-  },
-});
+export const appointmentToCalendarEvent = (
+  appointment: Appointment,
+  allAppointments: Appointment[] = []
+) => {
+  const isConflicting = hasConflicts(appointment, allAppointments);
+
+  return {
+    id: appointment.id,
+    title:
+      `${appointment.clientName} - ${appointment.service}`.trim() || 'Event',
+    start: appointment.startTime,
+    end: appointment.endTime,
+    editable: true,
+    startEditable: true,
+    durationEditable: true,
+    resourceEditable: true,
+    constraint: null,
+    className: isConflicting ? 'fc-event-conflicting' : 'fc-event-normal',
+    extendedProps: {
+      clientName: appointment.clientName,
+      provider: appointment.provider,
+      room: appointment.room,
+      service: appointment.service,
+      isConflicting,
+    },
+  };
+};
 
 export const backendToCalendarEvent = (be: BackendCalendarEvent) =>
   appointmentToCalendarEvent(backendToAppointment(be));

@@ -5,11 +5,13 @@ import {
   Box,
   Typography,
   IconButton,
+  Button,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
 import { format } from 'date-fns';
+import { CONFLICT_COLORS } from '../utils';
 // Inline view model used by CalendarView when opening the popup
 type CalendarPopupEvent = {
   id: string;
@@ -30,6 +32,9 @@ interface EventDetailsModalProps {
   handleClosePopup: () => void;
   onRequestDelete?: (id: string) => void;
   onRequestEdit?: (id: string) => void;
+  showConflictInfo?: boolean;
+  conflictExplanation?: string;
+  onResolveConflict?: () => void;
 }
 
 const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
@@ -38,6 +43,9 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
   handleClosePopup,
   onRequestDelete,
   onRequestEdit,
+  showConflictInfo = false,
+  conflictExplanation = '',
+  onResolveConflict,
 }) => {
   if (!popupEvent) return null;
 
@@ -54,7 +62,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
       }}
     >
       <DialogContent sx={{ p: 2 }}>
-        {/* Icons row */}
+        {/* Icons row - always at top right */}
         <Box
           sx={{
             display: 'flex',
@@ -81,6 +89,65 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
+
+        {/* Conflict info section */}
+        {showConflictInfo && (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              mb: 2,
+              p: 2,
+              backgroundColor: '#ffebee',
+              borderRadius: 1,
+              border: `1px solid ${CONFLICT_COLORS.CONFLICT}`,
+            }}
+          >
+            <Box
+              sx={{
+                width: 20,
+                height: 20,
+                backgroundColor: CONFLICT_COLORS.CONFLICT,
+                color: CONFLICT_COLORS.ICON_COLOR,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                fontFamily: 'Roboto, sans-serif',
+                border: '1px solid #ffffff',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
+              }}
+            >
+              !
+            </Box>
+            <Typography
+              variant="body2"
+              sx={{
+                color: CONFLICT_COLORS.CONFLICT,
+                fontWeight: 500,
+                flex: 1,
+              }}
+            >
+              Conflict detected: {conflictExplanation}
+            </Typography>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={onResolveConflict}
+              sx={{
+                backgroundColor: CONFLICT_COLORS.CONFLICT,
+                '&:hover': {
+                  backgroundColor: '#b71c1c',
+                },
+              }}
+            >
+              Resolve Conflict
+            </Button>
+          </Box>
+        )}
 
         {/* Header */}
         <Typography
