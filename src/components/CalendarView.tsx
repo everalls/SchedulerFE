@@ -298,36 +298,31 @@ const CalendarView = () => {
         />
       </Paper>
 
-      <Modal
+      <EventDetailsModal
         open={Boolean(popupEvent)}
-        onClose={handleClosePopup}
-        slotProps={{ backdrop: { sx: { backgroundColor: 'rgba(0,0,0,0.4)' } } }}
-      >
-        <EventDetailsModal
-          popupEvent={popupEvent}
-          handleClosePopup={handleClosePopup}
-          onRequestDelete={() => {
-            // Close details and open confirm dialog with current event as target
-            if (popupEvent) {
-              setDeleteTargetEvent(popupEvent);
-            }
-            setPopupEvent(null);
-            setConfirmDeleteOpen(true);
-          }}
-          onRequestEdit={(id) => {
-            // Find the appointment by id and open the modal prefilled
-            const appt = appointments.find((a) => a.id === id);
-            if (!appt) {
-              console.warn('Appointment not found for editing:', id);
-              showSnackbar('Appointment not found', 'error');
-              return;
-            }
-            setActiveAppointment(appt);
-            setPopupEvent(null);
-            setAppointmentModalOpen(true);
-          }}
-        />
-      </Modal>
+        popupEvent={popupEvent}
+        handleClosePopup={handleClosePopup}
+        onRequestDelete={() => {
+          // Close details and open confirm dialog with current event as target
+          if (popupEvent) {
+            setDeleteTargetEvent(popupEvent);
+          }
+          setPopupEvent(null);
+          setConfirmDeleteOpen(true);
+        }}
+        onRequestEdit={(id) => {
+          // Find the appointment by id and open the modal prefilled
+          const appt = appointments.find((a) => a.id === id);
+          if (!appt) {
+            console.warn('Appointment not found for editing:', id);
+            showSnackbar('Appointment not found', 'error');
+            return;
+          }
+          setActiveAppointment(appt);
+          setPopupEvent(null);
+          setAppointmentModalOpen(true);
+        }}
+      />
 
       {/* Confirm Delete Dialog */}
       <Dialog
