@@ -156,7 +156,7 @@
 
 /* Time slots - Major hour slots */
 .fc-timegrid-slot {
-  height: 48px;
+  height: 48px !important;
   border-color: #dadce0;
 }
 
