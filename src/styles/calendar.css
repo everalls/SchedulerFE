@@ -154,10 +154,19 @@
   border-color: #dadce0;
 }
 
-/* Time slots */
+/* Time slots - Major hour slots */
 .fc-timegrid-slot {
   height: 48px;
   border-color: #dadce0;
+}
+
+/* Hide minor slot lines (15-minute divisions) */
+.fc-timegrid-slot-minor {
+  border-top: none !important;
+}
+
+.fc-timegrid-slot-minor .fc-timegrid-slot-label {
+  display: none !important;
 }
 
 .fc-timegrid-slot-label {
@@ -201,6 +210,21 @@
 
 .fc-event:hover {
   box-shadow: 0 2px 6px 0 rgba(60, 64, 67, 0.4);
+}
+
+/* Enable bidirectional resizing */
+.fc-event-resizer {
+  cursor: ns-resize;
+}
+
+/* Top resize handle */
+.fc-event-resizer-start {
+  cursor: n-resize;
+}
+
+/* Bottom resize handle */
+.fc-event-resizer-end {
+  cursor: s-resize;
 }
 
 /* Event colors - Gmail palette */

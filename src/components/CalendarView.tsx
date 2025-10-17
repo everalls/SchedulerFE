@@ -255,14 +255,15 @@ const CalendarView = () => {
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView="timeGridWeek"
-          slotDuration="00:15:00"
+          slotDuration="01:00:00"
+          snapDuration="00:15:00"
           scrollTime="08:00:00"
           scrollTimeReset={false}
-          slotMinTime="00:00:00"
+          slotMinTime="08:00:00"
           slotMaxTime="24:00:00"
           expandRows={true}
           allDaySlot={false}
-          // slotLabelInterval="00:15:00"
+          slotLabelInterval="01:00:00"
           slotLabelFormat={{
             hour: 'numeric',
             minute: '2-digit',
@@ -289,11 +290,17 @@ const CalendarView = () => {
           }}
           height="calc(100vh - 100px)"
           selectable
-          editable // Enable drag-and-drop and resizing
+          editable={true} // Enable drag-and-drop and resizing
+          eventResizable={true} // Explicitly enable resizing
+          eventStartEditable={true} // Enable resizing from start
+          eventDurationEditable={true} // Enable resizing from end
           select={handleDateSelect}
           eventClick={handleEventClick} // Add right-click handler
           eventDrop={handleEventDrop} // Handle event drag-and-drop
-          eventResize={handleEventResize} // Handle event resizing
+          eventResize={(info) => {
+            console.log('Event resized:', info);
+            handleEventResize(info);
+          }} // Handle event resizing
           datesSet={handleDatesSet} // Handle date range changes
         />
       </Paper>

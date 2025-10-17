@@ -36,6 +36,11 @@ export const appointmentToCalendarEvent = (appointment: Appointment) => ({
   title: `${appointment.clientName} - ${appointment.service}`.trim() || 'Event',
   start: appointment.startTime,
   end: appointment.endTime,
+  editable: true,
+  startEditable: true,
+  durationEditable: true,
+  resourceEditable: true,
+  constraint: null,
   extendedProps: {
     clientName: appointment.clientName,
     provider: appointment.provider,
