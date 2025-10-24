@@ -174,8 +174,8 @@ const CalendarView = () => {
     setPopupEvent({
       id: info.event.id,
       title: info.event.title,
-      start: info.event.start?.toISOString() || '',
-      end: info.event.end?.toISOString() || '',
+      start: info.event.start ? info.event.start.toISOString() : '',
+      end: info.event.end ? info.event.end.toISOString() : '',
       extendedProps: {
         ...info.event.extendedProps,
         conflictExplanation: conflictExplanation, // Add the generated explanation
@@ -439,16 +439,12 @@ const CalendarView = () => {
           height="calc(100vh - 100px)"
           selectable
           editable={true} // Enable drag-and-drop and resizing
-          eventResizable={true} // Explicitly enable resizing
+          eventResize={handleEventResize} // Handle event resizing
           eventStartEditable={true} // Enable resizing from start
           eventDurationEditable={true} // Enable resizing from end
           select={handleDateSelect}
           eventClick={handleEventClick} // Add right-click handler
           eventDrop={handleEventDrop} // Handle event drag-and-drop
-          eventResize={(info) => {
-            console.log('Event resized:', info);
-            handleEventResize(info);
-          }} // Handle event resizing
           datesSet={handleDatesSet} // Handle date range changes
         />
       </Paper>
@@ -462,7 +458,7 @@ const CalendarView = () => {
           popupEvent?.extendedProps?.conflictExplanation || ''
         }
         onResolveConflict={() => {
-          showSnackbar('Conflict resolution feature coming soon!', 'info');
+          showSnackbar('Conflict resolution feature coming soon!', 'success');
         }}
         onRequestDelete={() => {
           // Close details and open confirm dialog with current event as target
