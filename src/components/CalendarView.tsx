@@ -55,7 +55,17 @@ const CalendarView = () => {
     message: string;
     severity: 'success' | 'error';
     key: number;
+    action?: React.ReactNode;
   }>({ open: false, message: '', severity: 'success', key: 0 });
+
+  // Draft mode state
+  const [isDraftMode, setIsDraftMode] = useState(false);
+  const [originalAppointments, setOriginalAppointments] = useState<
+    Appointment[]
+  >([]);
+  const [modifiedEventIds, setModifiedEventIds] = useState<Set<string>>(
+    new Set()
+  );
 
   const calendarRef = useRef<FullCalendar>(null);
 
@@ -88,6 +98,83 @@ const CalendarView = () => {
   ) => {
     if (reason === 'clickaway') return;
     setSnackbarState((s) => ({ ...s, open: false }));
+  };
+
+  // Draft mode handlers
+  const handleReset = async () => {
+    setIsDraftMode(false);
+    setModifiedEventIds(new Set());
+    setOriginalAppointments([]);
+
+    // Reload appointments from API
+    if (calendarRef.current) {
+      const calendar = calendarRef.current.getApi();
+      const dateRange = getCalendarDateRange(calendar.view);
+      await fetchAppointments(dateRange);
+    }
+    showSnackbar('Changes reset successfully', 'success');
+  };
+
+  const handleSave = async () => {
+    try {
+      // Get all modified appointments
+      const modifiedAppointments = appointments.filter((appointment) =>
+        modifiedEventIds.has(appointment.id)
+      );
+
+      // Call update API for each modified appointment
+      const updatePromises = modifiedAppointments.map((appointment) =>
+        updateBooking(appointment)
+      );
+
+      const results = await Promise.all(updatePromises);
+
+      // Check if all updates were successful
+      const allSuccessful = results.every((result) => result.success);
+
+      if (allSuccessful) {
+        setIsDraftMode(false);
+        setModifiedEventIds(new Set());
+        setOriginalAppointments([]);
+        showSnackbar('All changes saved successfully', 'success');
+
+        // Refresh calendar data from API
+        if (calendarRef.current) {
+          const calendar = calendarRef.current.getApi();
+          const dateRange = getCalendarDateRange(calendar.view);
+          await fetchAppointments(dateRange);
+        }
+      } else {
+        showSnackbar('Some changes failed to save', 'error');
+      }
+    } catch (error) {
+      console.error('Error saving changes:', error);
+      showSnackbar('Failed to save changes', 'error');
+    }
+  };
+
+  const enterDraftMode = () => {
+    setIsDraftMode(true);
+    setOriginalAppointments([...appointments]);
+    setModifiedEventIds(new Set());
+    setPopupEvent(null); // Close the event modal
+
+    // Show persistent snackbar with agreement button
+    setSnackbarState({
+      open: true,
+      message: 'Draft mode enabled - changes will be saved locally',
+      severity: 'success',
+      key: Date.now(),
+      action: (
+        <Button
+          color="inherit"
+          size="small"
+          onClick={() => setSnackbarState((prev) => ({ ...prev, open: false }))}
+        >
+          Got it
+        </Button>
+      ),
+    });
   };
 
   const handleDateSelect = (selectionInfo: {
@@ -175,20 +262,29 @@ const CalendarView = () => {
         endTime: updatedEnd,
       };
 
-      // Call API to update
-      const result = await updateBooking(updatedAppointment);
-      if (result.success) {
-        showSnackbar('Appointment time updated', 'success');
-
-        // Refresh calendar data from API
-        if (calendarRef.current) {
-          const calendar = calendarRef.current.getApi();
-          const dateRange = getCalendarDateRange(calendar.view);
-          await fetchAppointments(dateRange);
-        }
+      if (isDraftMode) {
+        // In draft mode, update locally and mark as modified
+        setAppointments((prev) =>
+          prev.map((apt) => (apt.id === id ? updatedAppointment : apt))
+        );
+        setModifiedEventIds((prev) => new Set([...prev, id]));
+        showSnackbar('Appointment time updated (draft)', 'success');
       } else {
-        showSnackbar(result.error || 'Failed to update appointment', 'error');
-        info.revert(); // Revert the drag if API call failed
+        // Normal mode - call API to update
+        const result = await updateBooking(updatedAppointment);
+        if (result.success) {
+          showSnackbar('Appointment time updated', 'success');
+
+          // Refresh calendar data from API
+          if (calendarRef.current) {
+            const calendar = calendarRef.current.getApi();
+            const dateRange = getCalendarDateRange(calendar.view);
+            await fetchAppointments(dateRange);
+          }
+        } else {
+          showSnackbar(result.error || 'Failed to update appointment', 'error');
+          info.revert(); // Revert the drag if API call failed
+        }
       }
     } else {
       showSnackbar('Invalid event data', 'error');
@@ -217,20 +313,29 @@ const CalendarView = () => {
         endTime: updatedEnd,
       };
 
-      // Call API to update
-      const result = await updateBooking(updatedAppointment);
-      if (result.success) {
-        showSnackbar('Appointment time updated', 'success');
-
-        // Refresh calendar data from API
-        if (calendarRef.current) {
-          const calendar = calendarRef.current.getApi();
-          const dateRange = getCalendarDateRange(calendar.view);
-          await fetchAppointments(dateRange);
-        }
+      if (isDraftMode) {
+        // In draft mode, update locally and mark as modified
+        setAppointments((prev) =>
+          prev.map((apt) => (apt.id === id ? updatedAppointment : apt))
+        );
+        setModifiedEventIds((prev) => new Set([...prev, id]));
+        showSnackbar('Appointment time updated (draft)', 'success');
       } else {
-        showSnackbar(result.error || 'Failed to update appointment', 'error');
-        info.revert(); // Revert the resize if API call failed
+        // Normal mode - call API to update
+        const result = await updateBooking(updatedAppointment);
+        if (result.success) {
+          showSnackbar('Appointment time updated', 'success');
+
+          // Refresh calendar data from API
+          if (calendarRef.current) {
+            const calendar = calendarRef.current.getApi();
+            const dateRange = getCalendarDateRange(calendar.view);
+            await fetchAppointments(dateRange);
+          }
+        } else {
+          showSnackbar(result.error || 'Failed to update appointment', 'error');
+          info.revert(); // Revert the resize if API call failed
+        }
       }
     } else {
       showSnackbar('Invalid event data', 'error');
@@ -287,9 +392,9 @@ const CalendarView = () => {
   const events = useMemo(
     () =>
       appointments.map((appointment) =>
-        appointmentToCalendarEvent(appointment, appointments)
+        appointmentToCalendarEvent(appointment, appointments, modifiedEventIds)
       ),
-    [appointments]
+    [appointments, modifiedEventIds]
   );
 
   return (
@@ -347,7 +452,9 @@ const CalendarView = () => {
           headerToolbar={{
             left: 'schedulerTitle prev,next today',
             center: 'title',
-            right: 'timeGridWeek,timeGridDay',
+            right: isDraftMode
+              ? 'resetButton,saveButton timeGridWeek,timeGridDay'
+              : 'timeGridWeek,timeGridDay',
           }}
           customButtons={{
             schedulerTitle: {
@@ -355,6 +462,14 @@ const CalendarView = () => {
               click: function () {
                 // No action - just a label
               },
+            },
+            resetButton: {
+              text: 'Reset',
+              click: handleReset,
+            },
+            saveButton: {
+              text: 'Save',
+              click: handleSave,
             },
           }}
           events={events}
@@ -401,7 +516,7 @@ const CalendarView = () => {
           popupEvent?.extendedProps?.conflictExplanation || ''
         }
         onResolveConflict={() => {
-          showSnackbar('Conflict resolution feature coming soon!', 'success');
+          enterDraftMode();
         }}
         onRequestDelete={() => {
           // Close details and open confirm dialog with current event as target
@@ -519,41 +634,66 @@ const CalendarView = () => {
           // If the id exists in store, update; otherwise create
           const exists = appointments.some((a) => a.id === appointment.id);
 
-          if (exists && appointment.id) {
-            // Update existing booking
-            const result = await updateBooking(appointment);
-            if (result.success) {
-              showSnackbar('Appointment updated successfully', 'success');
-
-              // Refresh calendar data from API
-              if (calendarRef.current) {
-                const calendar = calendarRef.current.getApi();
-                const dateRange = getCalendarDateRange(calendar.view);
-                await fetchAppointments(dateRange);
-              }
-            } else {
-              showSnackbar(
-                result.error || 'Failed to update appointment',
-                'error'
+          if (isDraftMode) {
+            // In draft mode, update locally and mark as modified
+            if (exists && appointment.id) {
+              setAppointments((prev) =>
+                prev.map((apt) =>
+                  apt.id === appointment.id ? appointment : apt
+                )
               );
+              setModifiedEventIds((prev) => new Set([...prev, appointment.id]));
+              showSnackbar('Appointment updated (draft)', 'success');
+            } else {
+              // Create new appointment in draft mode
+              const newAppointment = {
+                ...appointment,
+                id: `draft-${Date.now()}`,
+              };
+              setAppointments((prev) => [...prev, newAppointment]);
+              setModifiedEventIds(
+                (prev) => new Set([...prev, newAppointment.id])
+              );
+              showSnackbar('Appointment created (draft)', 'success');
             }
           } else {
-            // Create new booking
-            const result = await createBooking(appointment);
-            if (result.success) {
-              showSnackbar('Appointment created successfully', 'success');
+            // Normal mode - call API
+            if (exists && appointment.id) {
+              // Update existing booking
+              const result = await updateBooking(appointment);
+              if (result.success) {
+                showSnackbar('Appointment updated successfully', 'success');
 
-              // Refresh calendar data from API
-              if (calendarRef.current) {
-                const calendar = calendarRef.current.getApi();
-                const dateRange = getCalendarDateRange(calendar.view);
-                await fetchAppointments(dateRange);
+                // Refresh calendar data from API
+                if (calendarRef.current) {
+                  const calendar = calendarRef.current.getApi();
+                  const dateRange = getCalendarDateRange(calendar.view);
+                  await fetchAppointments(dateRange);
+                }
+              } else {
+                showSnackbar(
+                  result.error || 'Failed to update appointment',
+                  'error'
+                );
               }
             } else {
-              showSnackbar(
-                result.error || 'Failed to create appointment',
-                'error'
-              );
+              // Create new booking
+              const result = await createBooking(appointment);
+              if (result.success) {
+                showSnackbar('Appointment created successfully', 'success');
+
+                // Refresh calendar data from API
+                if (calendarRef.current) {
+                  const calendar = calendarRef.current.getApi();
+                  const dateRange = getCalendarDateRange(calendar.view);
+                  await fetchAppointments(dateRange);
+                }
+              } else {
+                showSnackbar(
+                  result.error || 'Failed to create appointment',
+                  'error'
+                );
+              }
             }
           }
         }}
@@ -562,14 +702,15 @@ const CalendarView = () => {
       <Snackbar
         key={snackbarState.key}
         open={snackbarState.open}
-        autoHideDuration={1000}
+        autoHideDuration={snackbarState.action ? null : 1000}
         onClose={handleSnackbarClose}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert
-          onClose={handleSnackbarClose}
+          onClose={snackbarState.action ? undefined : handleSnackbarClose}
           severity={snackbarState.severity}
           variant="filled"
+          action={snackbarState.action}
           sx={{
             width: { xs: '90vw', sm: 360 },
             textAlign: 'center',

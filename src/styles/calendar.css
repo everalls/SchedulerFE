@@ -244,6 +244,18 @@
   position: relative;
 }
 
+/* Modified events - blue border for draft mode */
+.fc-event-modified {
+  border-left: 12px solid #b0d5eb !important;
+  position: relative;
+}
+
+/* Conflicting AND modified events - warning background color border for draft mode */
+.fc-event-conflicting-modified {
+  border-left: 12px solid #f17878f7 !important;
+  position: relative;
+}
+
 /* Event content wrapper */
 .fc-event-content-wrapper {
   display: flex;

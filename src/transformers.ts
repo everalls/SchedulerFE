@@ -35,11 +35,13 @@ export const backendToAppointment = (be: BackendCalendarEvent): Appointment => {
 // Thin view-model for FullCalendar (avoid global type)
 export const appointmentToCalendarEvent = (
   appointment: Appointment,
-  allAppointments: Appointment[] = []
+  allAppointments: Appointment[] = [],
+  modifiedEventIds: Set<string> = new Set()
 ) => {
   // Use backend conflicts instead of client-side logic
   const isConflicting =
     appointment.conflicts && appointment.conflicts.length > 0;
+  const isModified = modifiedEventIds.has(appointment.id);
 
   return {
     id: appointment.id,
@@ -52,13 +54,21 @@ export const appointmentToCalendarEvent = (
     durationEditable: true,
     resourceEditable: true,
     constraint: null,
-    className: isConflicting ? 'fc-event-conflicting' : 'fc-event-normal',
+    className:
+      isConflicting && isModified
+        ? 'fc-event-conflicting-modified'
+        : isConflicting
+        ? 'fc-event-conflicting'
+        : isModified
+        ? 'fc-event-modified'
+        : 'fc-event-normal',
     extendedProps: {
       clientName: appointment.clientName,
       provider: appointment.provider,
       room: appointment.room,
       service: appointment.service,
       isConflicting,
+      isModified,
       conflicts: appointment.conflicts, // Pass conflicts to extendedProps
     },
   };
