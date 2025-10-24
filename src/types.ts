@@ -12,6 +12,7 @@ export type Appointment = {
 
   startTime: string; // ISO 8601 format
   endTime: string; // ISO 8601 format
+  conflicts?: BackendConflict[]; // Conflicts from backend
 };
 
 // Backend model (aligns with API contract)
@@ -73,6 +74,18 @@ export interface BackendService {
   name: string;
 }
 
+export interface BackendConflictResult {
+  bookingId: number;
+  conflictsWithIds: number[];
+  locations: number[];
+  workers: number[];
+}
+
+export interface BackendConflict {
+  evaluationCriteria: string;
+  results: BackendConflictResult[];
+}
+
 export interface BackendCalendarEvent {
   description: string;
   starting: string; // e.g. 2025-07-16T06:00:00-04:00
@@ -82,6 +95,7 @@ export interface BackendCalendarEvent {
   workers: BackendWorker[];
   clients: BackendClient[];
   isLocked: boolean;
+  conflicts: BackendConflict[];
   calendarId: number; // assume const 2 for now
   id: number;
   name: string; // booking name
