@@ -451,7 +451,7 @@ const CalendarView = () => {
           }}
           headerToolbar={{
             left: 'schedulerTitle prev,next today',
-            center: 'title',
+            center: isDraftMode ? 'title draftIndicator' : 'title',
             right: isDraftMode
               ? 'resetButton,saveButton timeGridWeek,timeGridDay'
               : 'timeGridWeek,timeGridDay',
@@ -461,6 +461,12 @@ const CalendarView = () => {
               text: 'Scheduler',
               click: function () {
                 // No action - just a label
+              },
+            },
+            draftIndicator: {
+              text: '!',
+              click: function () {
+                // No action - just a visual indicator
               },
             },
             resetButton: {

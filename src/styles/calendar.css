@@ -30,6 +30,67 @@
   opacity: 1 !important;
 }
 
+/* Draft indicator button - red exclamation mark in circle */
+.fc-draftIndicator-button {
+  background: transparent !important;
+  border: 1px solid #d32f2f !important;
+  border-radius: 50% !important;
+  color: #d32f2f !important;
+  font-family: 'Roboto', sans-serif !important;
+  font-size: 16px !important;
+  font-weight: bold !important;
+  width: 16px !important;
+  height: 16px !important;
+  padding: 0 !important;
+  margin-left: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  pointer-events: none !important;
+  cursor: default !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  vertical-align: middle !important;
+}
+
+.fc-draftIndicator-button:hover,
+.fc-draftIndicator-button:focus,
+.fc-draftIndicator-button:active,
+.fc-draftIndicator-button:disabled {
+  background: transparent !important;
+  border-color: #d32f2f !important;
+  color: #d32f2f !important;
+  opacity: 1 !important;
+}
+
+/* Title with draft indicator - combined display */
+.fc-titleWithDraft-button {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-family: 'Roboto', sans-serif !important;
+  font-size: 22px !important;
+  font-weight: 400 !important;
+  color: #3c4043 !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+  cursor: default !important;
+  text-transform: none !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.fc-titleWithDraft-button:hover,
+.fc-titleWithDraft-button:focus,
+.fc-titleWithDraft-button:active,
+.fc-titleWithDraft-button:disabled {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #3c4043 !important;
+  opacity: 1 !important;
+}
+
 /* Calendar Title - Gmail style */
 .fc-toolbar-title {
   font-family: 'Roboto', sans-serif;
