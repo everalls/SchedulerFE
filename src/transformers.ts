@@ -1,5 +1,4 @@
 import { Appointment, BackendCalendarEvent } from './types';
-import { hasConflicts, CONFLICT_COLORS } from './utils';
 
 // Choose first entries as primary; fall back to blanks when absent
 export const backendToAppointment = (be: BackendCalendarEvent): Appointment => {
@@ -28,6 +27,8 @@ export const backendToAppointment = (be: BackendCalendarEvent): Appointment => {
     // Preserve the backend timezone offsets; store as received
     startTime: be.starting,
     endTime: be.ending,
+    // Pass through conflicts from backend
+    conflicts: be.conflicts,
   };
 };
 
@@ -36,7 +37,9 @@ export const appointmentToCalendarEvent = (
   appointment: Appointment,
   allAppointments: Appointment[] = []
 ) => {
-  const isConflicting = hasConflicts(appointment, allAppointments);
+  // Use backend conflicts instead of client-side logic
+  const isConflicting =
+    appointment.conflicts && appointment.conflicts.length > 0;
 
   return {
     id: appointment.id,
@@ -56,6 +59,7 @@ export const appointmentToCalendarEvent = (
       room: appointment.room,
       service: appointment.service,
       isConflicting,
+      conflicts: appointment.conflicts, // Pass conflicts to extendedProps
     },
   };
 };

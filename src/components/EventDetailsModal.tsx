@@ -12,6 +12,18 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
 import { format } from 'date-fns';
 import { CONFLICT_COLORS } from '../utils';
+
+// Error code mapping for conflict explanations
+const CONFLICT_ERROR_MAPPING = {
+  SolutionResourceDoubleBooked:
+    'Same resource booked for overlapping errands in the solution',
+  EachErrandResourceHaveAServiceProvidedByParentErrand:
+    'Each resource assigned to an errand must have a service provided by the parent errand',
+  ServicingResourceCapacityMatchesCustomerResourcesCapacity:
+    'The capacity of the servicing resource must match the capacity of the customer resource',
+  ResourceAvailableForErrand:
+    'Resource must be available for the errand according to its availability calendar',
+} as const;
 // Inline view model used by CalendarView when opening the popup
 type CalendarPopupEvent = {
   id: string;
@@ -23,6 +35,7 @@ type CalendarPopupEvent = {
     provider: string;
     room: string;
     service: string;
+    conflicts?: any[];
   };
 };
 
@@ -94,11 +107,8 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
         {showConflictInfo && (
           <Box
             sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
               mb: 2,
-              p: 2,
+              p: 1.5,
               backgroundColor: '#ffebee',
               borderRadius: 1,
               border: `1px solid ${CONFLICT_COLORS.CONFLICT}`,
@@ -106,32 +116,53 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
           >
             <Box
               sx={{
-                width: 20,
-                height: 20,
-                backgroundColor: CONFLICT_COLORS.CONFLICT,
-                color: CONFLICT_COLORS.ICON_COLOR,
-                borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                fontFamily: 'Roboto, sans-serif',
-                border: '1px solid #ffffff',
-                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
+                gap: 1,
+                mb: 1,
               }}
             >
-              !
+              <Box
+                sx={{
+                  width: 18,
+                  height: 18,
+                  backgroundColor: CONFLICT_COLORS.CONFLICT,
+                  color: CONFLICT_COLORS.ICON_COLOR,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '11px',
+                  fontWeight: 'bold',
+                  fontFamily: 'Roboto, sans-serif',
+                  border: '1px solid #ffffff',
+                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
+                }}
+              >
+                !
+              </Box>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: CONFLICT_COLORS.CONFLICT,
+                  fontWeight: 500,
+                  fontSize: '0.8rem',
+                  flex: 1,
+                }}
+              >
+                Conflict detected
+              </Typography>
             </Box>
             <Typography
               variant="body2"
               sx={{
                 color: CONFLICT_COLORS.CONFLICT,
-                fontWeight: 500,
-                flex: 1,
+                fontSize: '0.75rem',
+                mb: 1,
+                lineHeight: 1.3,
               }}
             >
-              Conflict detected: {conflictExplanation}
+              {conflictExplanation}
             </Typography>
             <Button
               variant="contained"
@@ -139,12 +170,16 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
               onClick={onResolveConflict}
               sx={{
                 backgroundColor: CONFLICT_COLORS.CONFLICT,
+                fontSize: '0.75rem',
+                py: 0.5,
+                px: 1.5,
+                minWidth: 'auto',
                 '&:hover': {
                   backgroundColor: '#b71c1c',
                 },
               }}
             >
-              Resolve Conflict
+              Optimize
             </Button>
           </Box>
         )}

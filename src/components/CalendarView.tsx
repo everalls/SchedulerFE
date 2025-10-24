@@ -117,57 +117,24 @@ const CalendarView = () => {
     // Check if this is a conflicting event and generate explanation if needed
     let conflictExplanation = '';
     if (info.event.extendedProps.isConflicting) {
-      // Find the conflicting appointment
-      const conflictingAppointment = appointments.find(
-        (a) => a.id === info.event.id
-      );
-      if (conflictingAppointment) {
-        // Find conflicting appointments using the same logic as handleConflictIconClick
-        const conflictingWith = appointments.filter((otherAppointment) => {
-          if (otherAppointment.id === info.event.id) return false;
-
-          // Check time overlap and resource conflict
-          const start1 = new Date(conflictingAppointment.startTime).getTime();
-          const end1 = new Date(conflictingAppointment.endTime).getTime();
-          const start2 = new Date(otherAppointment.startTime).getTime();
-          const end2 = new Date(otherAppointment.endTime).getTime();
-
-          const hasTimeOverlap = start1 < end2 && start2 < end1;
-          const hasResourceConflict =
-            conflictingAppointment.provider === otherAppointment.provider ||
-            conflictingAppointment.room === otherAppointment.room;
-
-          return hasTimeOverlap && hasResourceConflict;
-        });
-
-        if (conflictingWith.length > 0) {
-          const firstConflict = conflictingWith[0];
-          const sharedResources = [];
-
-          // Check which specific resources are conflicting
-          if (
-            conflictingAppointment.provider === firstConflict.provider &&
-            conflictingAppointment.provider
-          ) {
-            sharedResources.push(
-              `provider "${conflictingAppointment.provider}"`
-            );
-          }
-          if (
-            conflictingAppointment.room === firstConflict.room &&
-            conflictingAppointment.room
-          ) {
-            sharedResources.push(`room "${conflictingAppointment.room}"`);
-          }
-
-          if (sharedResources.length > 0) {
-            conflictExplanation = `Same time slot with ${sharedResources.join(
-              ' and '
-            )}`;
-          } else {
-            conflictExplanation = 'Same time slot with another appointment';
-          }
-        }
+      // Use backend conflicts data
+      const conflicts = info.event.extendedProps.conflicts;
+      if (conflicts && conflicts.length > 0) {
+        // Generate explanation based on backend conflict data
+        const firstConflict = conflicts[0];
+        const errorMapping = {
+          SolutionResourceDoubleBooked:
+            'Same resource booked for overlapping errands in the solution',
+          EachErrandResourceHaveAServiceProvidedByParentErrand:
+            'Each resource assigned to an errand must have a service provided by the parent errand',
+          ServicingResourceCapacityMatchesCustomerResourcesCapacity:
+            'The capacity of the servicing resource must match the capacity of the customer resource',
+          ResourceAvailableForErrand:
+            'Resource must be available for the errand according to its availability calendar',
+        };
+        conflictExplanation =
+          errorMapping[firstConflict.evaluationCriteria] ||
+          `Conflict detected: ${firstConflict.evaluationCriteria}`;
       }
     }
 
@@ -276,51 +243,26 @@ const CalendarView = () => {
     const conflictingAppointment = appointments.find((a) => a.id === eventId);
     if (!conflictingAppointment) return;
 
-    // Find conflicting appointments using the existing utility functions
-    const conflictingWith = appointments.filter((otherAppointment) => {
-      if (otherAppointment.id === eventId) return false;
-
-      // Check time overlap and resource conflict using utility functions
-      const start1 = new Date(conflictingAppointment.startTime).getTime();
-      const end1 = new Date(conflictingAppointment.endTime).getTime();
-      const start2 = new Date(otherAppointment.startTime).getTime();
-      const end2 = new Date(otherAppointment.endTime).getTime();
-
-      const hasTimeOverlap = start1 < end2 && start2 < end1;
-      const hasResourceConflict =
-        conflictingAppointment.provider === otherAppointment.provider ||
-        conflictingAppointment.room === otherAppointment.room;
-
-      return hasTimeOverlap && hasResourceConflict;
-    });
-
-    // Generate conflict explanation
+    // Generate conflict explanation from backend conflicts data
     let conflictExplanation = '';
-    if (conflictingWith.length > 0) {
-      const firstConflict = conflictingWith[0];
-      const sharedResources = [];
-
-      // Check which specific resources are conflicting
-      if (
-        conflictingAppointment.provider === firstConflict.provider &&
-        conflictingAppointment.provider
-      ) {
-        sharedResources.push(`provider "${conflictingAppointment.provider}"`);
-      }
-      if (
-        conflictingAppointment.room === firstConflict.room &&
-        conflictingAppointment.room
-      ) {
-        sharedResources.push(`room "${conflictingAppointment.room}"`);
-      }
-
-      if (sharedResources.length > 0) {
-        conflictExplanation = `Same time slot with ${sharedResources.join(
-          ' and '
-        )}`;
-      } else {
-        conflictExplanation = 'Same time slot with another appointment';
-      }
+    if (
+      conflictingAppointment.conflicts &&
+      conflictingAppointment.conflicts.length > 0
+    ) {
+      const firstConflict = conflictingAppointment.conflicts[0];
+      const errorMapping = {
+        SolutionResourceDoubleBooked:
+          'Same resource booked for overlapping errands in the solution',
+        EachErrandResourceHaveAServiceProvidedByParentErrand:
+          'Each resource assigned to an errand must have a service provided by the parent errand',
+        ServicingResourceCapacityMatchesCustomerResourcesCapacity:
+          'The capacity of the servicing resource must match the capacity of the customer resource',
+        ResourceAvailableForErrand:
+          'Resource must be available for the errand according to its availability calendar',
+      };
+      conflictExplanation =
+        errorMapping[firstConflict.evaluationCriteria] ||
+        `Conflict detected: ${firstConflict.evaluationCriteria}`;
     }
 
     // Set the popup event to show the modal with conflict info
@@ -336,6 +278,7 @@ const CalendarView = () => {
         service: conflictingAppointment.service,
         isConflicting: true,
         conflictExplanation: conflictExplanation,
+        conflicts: conflictingAppointment.conflicts,
       },
     };
     setPopupEvent(popupEventData);
