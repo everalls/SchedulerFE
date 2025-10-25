@@ -24,13 +24,17 @@ import { updateAppointment } from '../utils';
 import EventDetailsModal from './EventDetailsModal';
 import AppointmentDetailsModal from './AppointmentModal';
 import { format } from 'date-fns';
-import { appointmentToCalendarEvent } from '../transformers';
+import {
+  appointmentToCalendarEvent,
+  backendToAppointment,
+} from '../transformers';
 import {
   getCalendarDateRange,
   createBooking,
   updateBooking,
   deleteBooking,
   evaluateBookings,
+  optimizeBookings,
 } from '../services/api';
 
 const CalendarView = () => {
@@ -154,28 +158,111 @@ const CalendarView = () => {
     }
   };
 
-  const enterDraftMode = () => {
-    setIsDraftMode(true);
-    setOriginalAppointments([...appointments]);
-    setModifiedEventIds(new Set());
+  const enterDraftMode = async () => {
     setPopupEvent(null); // Close the event modal
 
-    // Show persistent snackbar with agreement button
-    setSnackbarState({
-      open: true,
-      message: 'Draft mode enabled - changes will be saved locally',
-      severity: 'success',
-      key: Date.now(),
-      action: (
-        <Button
-          color="inherit"
-          size="small"
-          onClick={() => setSnackbarState((prev) => ({ ...prev, open: false }))}
-        >
-          Got it
-        </Button>
-      ),
-    });
+    // Show loading message
+    showSnackbar('Optimizing bookings...', 'success');
+
+    try {
+      // Get current date range
+      const dateRange = calendarRef.current
+        ? getCalendarDateRange(calendarRef.current.getApi().view)
+        : null;
+
+      if (!dateRange) {
+        showSnackbar('Unable to get calendar date range', 'error');
+        return;
+      }
+
+      // Call optimize API
+      const result = await optimizeBookings(dateRange.from, dateRange.to);
+
+      if (result.success && result.optimizedEvents) {
+        // Convert backend events to appointments
+        const optimizedAppointments = result.optimizedEvents.map((be) =>
+          backendToAppointment(be)
+        );
+
+        // Compare optimized appointments with existing ones to find changed events
+        const changedEventIds = new Set<string>();
+
+        optimizedAppointments.forEach((optimizedApt) => {
+          const existingApt = appointments.find(
+            (a) => a.id === optimizedApt.id
+          );
+
+          if (!existingApt) {
+            // New appointment
+            console.log('New appointment detected:', optimizedApt.id);
+            changedEventIds.add(optimizedApt.id);
+          } else {
+            // Check if any fields changed
+            const hasChanged =
+              existingApt.startTime !== optimizedApt.startTime ||
+              existingApt.endTime !== optimizedApt.endTime ||
+              existingApt.provider !== optimizedApt.provider ||
+              existingApt.room !== optimizedApt.room ||
+              existingApt.service !== optimizedApt.service ||
+              existingApt.clientName !== optimizedApt.clientName;
+
+            if (hasChanged) {
+              console.log('Changed appointment:', optimizedApt.id, {
+                startTime: existingApt.startTime !== optimizedApt.startTime,
+                endTime: existingApt.endTime !== optimizedApt.endTime,
+                provider: existingApt.provider !== optimizedApt.provider,
+                room: existingApt.room !== optimizedApt.room,
+                service: existingApt.service !== optimizedApt.service,
+                clientName: existingApt.clientName !== optimizedApt.clientName,
+              });
+              changedEventIds.add(optimizedApt.id);
+            }
+          }
+        });
+
+        console.log('Total appointments:', optimizedAppointments.length);
+        console.log(
+          'Changed appointments:',
+          changedEventIds.size,
+          Array.from(changedEventIds)
+        );
+
+        // Enter draft mode with optimized appointments
+        setIsDraftMode(true);
+        setOriginalAppointments([...appointments]);
+        setAppointments(optimizedAppointments);
+        setModifiedEventIds(changedEventIds);
+
+        // Show persistent snackbar with optimization result
+        const isValid = result.isValid ?? false;
+        const baseMessage = isValid
+          ? 'Optimization complete! Changes are shown in draft mode and saved locally only. Review and click "Save" to apply, or "Reset" to discard.'
+          : 'Optimization complete with some issues remaining. Changes are shown in draft mode and saved locally only. Please review and click "Save" to apply, or "Reset" to discard.';
+
+        setSnackbarState({
+          open: true,
+          message: baseMessage,
+          severity: isValid ? 'success' : 'success',
+          key: Date.now(),
+          action: (
+            <Button
+              color="inherit"
+              size="small"
+              onClick={() =>
+                setSnackbarState((prev) => ({ ...prev, open: false }))
+              }
+            >
+              Got it
+            </Button>
+          ),
+        });
+      } else {
+        showSnackbar(result.error || 'Failed to optimize bookings', 'error');
+      }
+    } catch (error) {
+      console.error('Error optimizing bookings:', error);
+      showSnackbar('Failed to optimize bookings', 'error');
+    }
   };
 
   // Function to call evaluate API and update conflicts
@@ -576,8 +663,8 @@ const CalendarView = () => {
         conflictExplanation={
           popupEvent?.extendedProps?.conflictExplanation || ''
         }
-        onResolveConflict={() => {
-          enterDraftMode();
+        onResolveConflict={async () => {
+          await enterDraftMode();
         }}
         onRequestDelete={() => {
           // Close details and open confirm dialog with current event as target
@@ -775,7 +862,7 @@ const CalendarView = () => {
           variant="filled"
           action={snackbarState.action}
           sx={{
-            width: { xs: '90vw', sm: 360 },
+            width: { xs: '90vw', sm: '600px', md: '700px' },
             textAlign: 'center',
             justifyContent: 'center',
           }}
