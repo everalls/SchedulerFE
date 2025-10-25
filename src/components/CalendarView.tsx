@@ -30,6 +30,7 @@ import {
   createBooking,
   updateBooking,
   deleteBooking,
+  evaluateBookings,
 } from '../services/api';
 
 const CalendarView = () => {
@@ -177,6 +178,56 @@ const CalendarView = () => {
     });
   };
 
+  // Function to call evaluate API and update conflicts
+  const callEvaluateAPI = async (updatedAppointments?: Appointment[]) => {
+    if (!isDraftMode) return; // Only call in draft mode
+
+    try {
+      // Use provided appointments or current state
+      const appointmentsToEvaluate = updatedAppointments || appointments;
+
+      // Filter out draft appointments (those with "draft-" prefix)
+      const validAppointments = appointmentsToEvaluate.filter(
+        (apt) => !apt.id.startsWith('draft-')
+      );
+
+      if (validAppointments.length === 0) return; // No valid appointments to evaluate
+
+      const result = await evaluateBookings(validAppointments);
+
+      if (result.success && result.conflicts) {
+        // Map conflicts back to appointments by bookingId
+        const conflictsByBookingId = new Map<number, any[]>();
+
+        result.conflicts.forEach((conflict) => {
+          conflict.results.forEach((result) => {
+            if (!conflictsByBookingId.has(result.bookingId)) {
+              conflictsByBookingId.set(result.bookingId, []);
+            }
+            conflictsByBookingId.get(result.bookingId)!.push({
+              evaluationCriteria: conflict.evaluationCriteria,
+              results: [result],
+            });
+          });
+        });
+
+        // Update appointments with conflicts
+        setAppointments((prev) =>
+          prev.map((appointment) => {
+            const appointmentId = parseInt(appointment.id);
+            const conflicts = conflictsByBookingId.get(appointmentId) || [];
+            return {
+              ...appointment,
+              conflicts: conflicts,
+            };
+          })
+        );
+      }
+    } catch (error) {
+      console.error('Error evaluating bookings:', error);
+    }
+  };
+
   const handleDateSelect = (selectionInfo: {
     startStr: string;
     endStr: string;
@@ -264,11 +315,13 @@ const CalendarView = () => {
 
       if (isDraftMode) {
         // In draft mode, update locally and mark as modified
-        setAppointments((prev) =>
-          prev.map((apt) => (apt.id === id ? updatedAppointment : apt))
+        const updatedAppointments = appointments.map((apt) =>
+          apt.id === id ? updatedAppointment : apt
         );
+        setAppointments(updatedAppointments);
         setModifiedEventIds((prev) => new Set([...prev, id]));
         showSnackbar('Appointment time updated (draft)', 'success');
+        setTimeout(() => callEvaluateAPI(updatedAppointments), 100);
       } else {
         // Normal mode - call API to update
         const result = await updateBooking(updatedAppointment);
@@ -315,11 +368,13 @@ const CalendarView = () => {
 
       if (isDraftMode) {
         // In draft mode, update locally and mark as modified
-        setAppointments((prev) =>
-          prev.map((apt) => (apt.id === id ? updatedAppointment : apt))
+        const updatedAppointments = appointments.map((apt) =>
+          apt.id === id ? updatedAppointment : apt
         );
+        setAppointments(updatedAppointments);
         setModifiedEventIds((prev) => new Set([...prev, id]));
         showSnackbar('Appointment time updated (draft)', 'success');
+        setTimeout(() => callEvaluateAPI(updatedAppointments), 100);
       } else {
         // Normal mode - call API to update
         const result = await updateBooking(updatedAppointment);
@@ -643,24 +698,26 @@ const CalendarView = () => {
           if (isDraftMode) {
             // In draft mode, update locally and mark as modified
             if (exists && appointment.id) {
-              setAppointments((prev) =>
-                prev.map((apt) =>
-                  apt.id === appointment.id ? appointment : apt
-                )
+              const updatedAppointments = appointments.map((apt) =>
+                apt.id === appointment.id ? appointment : apt
               );
+              setAppointments(updatedAppointments);
               setModifiedEventIds((prev) => new Set([...prev, appointment.id]));
               showSnackbar('Appointment updated (draft)', 'success');
+              setTimeout(() => callEvaluateAPI(updatedAppointments), 100);
             } else {
               // Create new appointment in draft mode
               const newAppointment = {
                 ...appointment,
                 id: `draft-${Date.now()}`,
               };
-              setAppointments((prev) => [...prev, newAppointment]);
+              const updatedAppointments = [...appointments, newAppointment];
+              setAppointments(updatedAppointments);
               setModifiedEventIds(
                 (prev) => new Set([...prev, newAppointment.id])
               );
               showSnackbar('Appointment created (draft)', 'success');
+              setTimeout(() => callEvaluateAPI(updatedAppointments), 100);
             }
           } else {
             // Normal mode - call API

@@ -7,6 +7,7 @@ import {
   CreateBookingRequest,
   UpdateBookingRequest,
   Appointment,
+  BackendConflict,
 } from '../types';
 
 // Use proxy in development, CORS proxy for GitHub Pages
@@ -417,6 +418,57 @@ export const updateBooking = async (
     console.error('Error updating booking:', error);
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to update booking';
+    return { success: false, error: errorMessage };
+  }
+};
+
+/**
+ * Evaluates bookings and returns conflict status
+ */
+export const evaluateBookings = async (
+  appointments: Appointment[]
+): Promise<{
+  success: boolean;
+  error?: string;
+  conflicts?: BackendConflict[];
+}> => {
+  try {
+    // Convert all appointments to booking requests
+    const bookingRequests = appointments.map((appointment) => {
+      const bookingRequest = appointmentToBookingRequest(appointment);
+      const updateRequest: UpdateBookingRequest = {
+        ...bookingRequest,
+        id: parseInt(appointment.id),
+      };
+      return updateRequest;
+    });
+
+    const url = `${API_BASE_URL}/booking/evaluate?calendarId=${CALENDAR_ID}`;
+
+    console.log('Evaluating bookings:', bookingRequests);
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(bookingRequests),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}, ${errorText}`);
+    }
+
+    const data = await response.json();
+
+    console.log('Bookings evaluated successfully:', data);
+
+    return { success: true, conflicts: data };
+  } catch (error) {
+    console.error('Error evaluating bookings:', error);
+    const errorMessage =
+      error instanceof Error ? error.message : 'Failed to evaluate bookings';
     return { success: false, error: errorMessage };
   }
 };
