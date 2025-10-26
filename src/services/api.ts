@@ -472,3 +472,56 @@ export const evaluateBookings = async (
     return { success: false, error: errorMessage };
   }
 };
+
+/**
+ * Optimizes bookings for a given date range
+ */
+export const optimizeBookings = async (
+  from: string,
+  to: string
+): Promise<{
+  success: boolean;
+  error?: string;
+  optimizedEvents?: BackendCalendarEvent[];
+  isValid?: boolean;
+  errors?: string[];
+  timesRetried?: number;
+}> => {
+  try {
+    const fromFormatted = new Date(from).toISOString();
+    const toFormatted = new Date(to).toISOString();
+
+    const url = `${API_BASE_URL}/booking/optimize?from=${fromFormatted}&to=${toFormatted}&calendarId=${CALENDAR_ID}`;
+
+    console.log('Optimizing bookings:', url);
+
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}, ${errorText}`);
+    }
+
+    const data = await response.json();
+
+    console.log('Bookings optimized successfully:', data);
+
+    return {
+      success: true,
+      optimizedEvents: data.optimized || [],
+      isValid: data.isValid,
+      errors: data.errors,
+      timesRetried: data.timesRetried,
+    };
+  } catch (error) {
+    console.error('Error optimizing bookings:', error);
+    const errorMessage =
+      error instanceof Error ? error.message : 'Failed to optimize bookings';
+    return { success: false, error: errorMessage };
+  }
+};
