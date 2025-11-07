@@ -13,6 +13,29 @@ export const backendToAppointment = (be: BackendCalendarEvent): Appointment => {
   const providerId = be.workers?.[0]?.id;
   const roomId = be.locations?.[0]?.id;
 
+  const servicesDetails =
+    be.services?.map((service) => ({
+      ...service,
+    })) ?? [];
+
+  const locationsDetails =
+    be.locations?.map((location) => ({
+      ...location,
+      availableServices:
+        location.availableServices?.map((service) => ({
+          ...service,
+        })) ?? [],
+    })) ?? [];
+
+  const workersDetails =
+    be.workers?.map((worker) => ({
+      ...worker,
+      availableServices:
+        worker.availableServices?.map((service) => ({
+          ...service,
+        })) ?? [],
+    })) ?? [];
+
   return {
     id: String(be.id),
     clientName,
@@ -29,6 +52,9 @@ export const backendToAppointment = (be: BackendCalendarEvent): Appointment => {
     endTime: be.ending,
     // Pass through conflicts from backend
     conflicts: be.conflicts,
+    servicesDetails,
+    locationsDetails,
+    workersDetails,
   };
 };
 

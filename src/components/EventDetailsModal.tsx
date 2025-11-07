@@ -160,6 +160,7 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                 fontSize: '0.75rem',
                 mb: 1,
                 lineHeight: 1.3,
+                whiteSpace: 'pre-line',
               }}
             >
               {conflictExplanation}
