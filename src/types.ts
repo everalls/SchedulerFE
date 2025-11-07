@@ -16,6 +16,8 @@ export type Appointment = {
   servicesDetails?: BackendServiceRef[];
   locationsDetails?: BackendLocation[];
   workersDetails?: BackendWorker[];
+  providerLocked?: boolean;
+  roomLocked?: boolean;
 };
 
 // Backend model (aligns with API contract)
@@ -39,6 +41,7 @@ export interface BackendLocation {
   calendarId: number;
   id: number;
   name: string;
+  isLocked?: boolean;
 }
 
 export interface BackendPreferrableResource {
@@ -53,6 +56,7 @@ export interface BackendWorker {
   calendarId: number;
   id: number;
   name: string;
+  isLocked?: boolean;
 }
 
 export interface BackendClient {

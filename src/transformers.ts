@@ -55,6 +55,8 @@ export const backendToAppointment = (be: BackendCalendarEvent): Appointment => {
     servicesDetails,
     locationsDetails,
     workersDetails,
+    providerLocked: be.workers?.[0]?.isLocked ?? false,
+    roomLocked: be.locations?.[0]?.isLocked ?? false,
   };
 };
 

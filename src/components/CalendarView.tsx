@@ -337,6 +337,8 @@ const CalendarView = () => {
       room: '',
       startTime: selectionInfo.startStr,
       endTime: selectionInfo.endStr,
+      providerLocked: false,
+      roomLocked: false,
     });
     setAppointmentModalOpen(true);
   };

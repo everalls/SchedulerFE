@@ -275,10 +275,20 @@ const appointmentToBookingRequest = (
     starting,
     ending,
     locations: appointment.roomId
-      ? [{ id: appointment.roomId, IsLocked: false }]
+      ? [
+          {
+            id: appointment.roomId,
+            IsLocked: Boolean(appointment.roomLocked),
+          },
+        ]
       : [],
     workers: appointment.providerId
-      ? [{ id: appointment.providerId, IsLocked: false }]
+      ? [
+          {
+            id: appointment.providerId,
+            IsLocked: Boolean(appointment.providerLocked),
+          },
+        ]
       : [],
     clients: appointment.clientId
       ? [{ id: appointment.clientId, IsLocked: false }]
