@@ -13,6 +13,9 @@ export type Appointment = {
   startTime: string; // ISO 8601 format
   endTime: string; // ISO 8601 format
   conflicts?: BackendConflict[]; // Conflicts from backend
+  servicesDetails?: BackendServiceRef[];
+  locationsDetails?: BackendLocation[];
+  workersDetails?: BackendWorker[];
 };
 
 // Backend model (aligns with API contract)

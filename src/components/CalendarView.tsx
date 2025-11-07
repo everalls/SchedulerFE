@@ -19,7 +19,7 @@ import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { useAppointments } from '../context/AppointmentsContext';
-import { Appointment } from '../types';
+import { Appointment, BackendLocation, BackendWorker } from '../types';
 import { updateAppointment } from '../utils';
 import EventDetailsModal from './EventDetailsModal';
 import AppointmentDetailsModal from './AppointmentModal';
@@ -36,6 +36,16 @@ import {
   evaluateBookings,
   optimizeBookings,
 } from '../services/api';
+
+const CONFLICT_MESSAGES: Record<string, string> = {
+  SolutionResourceDoubleBooked: 'Resource is already booked during this time.',
+  EachErrandResourceHaveAServiceProvidedByParentErrand:
+    'Resource is not configured for the requested service.',
+  ServicingResourceCapacityMatchesCustomerResourcesCapacity:
+    'Resource capacity does not meet this appointment’s needs.',
+  ResourceAvailableForErrand:
+    'Resource is not available during the requested time.',
+};
 
 const CalendarView = () => {
   const {
@@ -331,6 +341,212 @@ const CalendarView = () => {
     setAppointmentModalOpen(true);
   };
 
+  const { locationMap, workerMap, appointmentMap } = useMemo(() => {
+    const locationAccumulator = new Map<number, BackendLocation>();
+    const workerAccumulator = new Map<number, BackendWorker>();
+    const appointmentAccumulator = new Map<number, Appointment>();
+
+    appointments.forEach((appt) => {
+      const numericId = Number.parseInt(appt.id, 10);
+      if (!Number.isNaN(numericId)) {
+        appointmentAccumulator.set(numericId, appt);
+      }
+
+      appt.locationsDetails?.forEach((location) => {
+        if (
+          location &&
+          typeof location.id === 'number' &&
+          !locationAccumulator.has(location.id)
+        ) {
+          locationAccumulator.set(location.id, location);
+        }
+      });
+
+      appt.workersDetails?.forEach((worker) => {
+        if (
+          worker &&
+          typeof worker.id === 'number' &&
+          !workerAccumulator.has(worker.id)
+        ) {
+          workerAccumulator.set(worker.id, worker);
+        }
+      });
+    });
+
+    return {
+      locationMap: locationAccumulator,
+      workerMap: workerAccumulator,
+      appointmentMap: appointmentAccumulator,
+    };
+  }, [appointments]);
+
+  const buildConflictExplanation = (
+    conflicts: Appointment['conflicts'],
+    currentAppointment?: Appointment
+  ): string => {
+    if (!conflicts || conflicts.length === 0) {
+      return '';
+    }
+
+    const messages: string[] = [];
+
+    conflicts.forEach((conflict) => {
+      const baseMessage =
+        CONFLICT_MESSAGES[conflict.evaluationCriteria] ||
+        `Conflict detected: ${conflict.evaluationCriteria}`;
+      const detailFragments: string[] = [];
+
+      conflict.results.forEach((result) => {
+        switch (conflict.evaluationCriteria) {
+          case 'EachErrandResourceHaveAServiceProvidedByParentErrand': {
+            const requiredService =
+              currentAppointment?.service || 'the scheduled service';
+
+            if (result.locations && result.locations.length > 0) {
+              result.locations.forEach((locationId) => {
+                const location = locationMap.get(locationId);
+                if (location) {
+                  detailFragments.push(
+                    `Room "${location.name}" isn’t configured for ${requiredService}.`
+                  );
+                } else {
+                  detailFragments.push(
+                    `Room ${locationId} isn’t configured for ${requiredService}.`
+                  );
+                }
+              });
+            }
+
+            if (result.workers && result.workers.length > 0) {
+              result.workers.forEach((workerId) => {
+                const worker = workerMap.get(workerId);
+                if (worker) {
+                  detailFragments.push(
+                    `Provider "${worker.name}" isn’t configured for ${requiredService}.`
+                  );
+                } else {
+                  detailFragments.push(
+                    `Provider ${workerId} isn’t configured for ${requiredService}.`
+                  );
+                }
+              });
+            }
+
+            break;
+          }
+
+          case 'SolutionResourceDoubleBooked': {
+            const conflictingAppointments =
+              result.conflictsWithIds?.map((id) => appointmentMap.get(id)) ||
+              [];
+            const namedConflicts = conflictingAppointments.filter(
+              (appt): appt is Appointment => Boolean(appt)
+            );
+
+            const conflictSummary =
+              namedConflicts.length > 0
+                ? namedConflicts
+                    .map((appt) => {
+                      const start = appt.startTime
+                        ? format(new Date(appt.startTime), 'MMM d p')
+                        : '';
+                      const end = appt.endTime
+                        ? format(new Date(appt.endTime), 'MMM d p')
+                        : '';
+                      const timeRange =
+                        start && end ? ` (${start} - ${end})` : '';
+                      return `${appt.clientName} - ${appt.service}${timeRange}`;
+                    })
+                    .join(', ')
+                : result.conflictsWithIds && result.conflictsWithIds.length > 0
+                ? result.conflictsWithIds
+                    .map((id) => `booking #${id}`)
+                    .join(', ')
+                : '';
+
+            if (result.workers && result.workers.length > 0) {
+              result.workers.forEach((workerId) => {
+                const worker = workerMap.get(workerId);
+                const workerName = worker?.name ?? `ID ${workerId}`;
+
+                if (conflictSummary) {
+                  detailFragments.push(
+                    `Provider "${workerName}" already has ${conflictSummary}.`
+                  );
+                } else {
+                  detailFragments.push(
+                    `Provider "${workerName}" already has another booking at this time.`
+                  );
+                }
+              });
+            }
+
+            if (result.locations && result.locations.length > 0) {
+              result.locations.forEach((locationId) => {
+                const location = locationMap.get(locationId);
+                const locationName = location?.name || `Location ${locationId}`;
+
+                if (conflictSummary) {
+                  detailFragments.push(
+                    `Room "${locationName}" is already booked for ${conflictSummary}.`
+                  );
+                } else {
+                  detailFragments.push(
+                    `Room "${locationName}" is already booked at this time.`
+                  );
+                }
+              });
+            }
+
+            break;
+          }
+
+          default: {
+            if (result.locations && result.locations.length > 0) {
+              result.locations.forEach((locationId) => {
+                const location = locationMap.get(locationId);
+                if (location) {
+                  detailFragments.push(
+                    `Room "${location.name}" is involved in this conflict.`
+                  );
+                } else {
+                  detailFragments.push(
+                    `Room ${locationId} is involved in this conflict.`
+                  );
+                }
+              });
+            }
+
+            if (result.workers && result.workers.length > 0) {
+              result.workers.forEach((workerId) => {
+                const worker = workerMap.get(workerId);
+                if (worker) {
+                  detailFragments.push(
+                    `Provider "${worker.name}" is involved in this conflict.`
+                  );
+                } else {
+                  detailFragments.push(
+                    `Provider ${workerId} is involved in this conflict.`
+                  );
+                }
+              });
+            }
+
+            break;
+          }
+        }
+      });
+
+      if (detailFragments.length > 0) {
+        messages.push(`${baseMessage} ${detailFragments.join(' ')}`);
+      } else {
+        messages.push(baseMessage);
+      }
+    });
+
+    return messages.join('\n');
+  };
+
   const handleEventClick = (info: any) => {
     info.jsEvent.preventDefault(); // Prevent default browser context menu
     if (!info.event.id) {
@@ -342,24 +558,15 @@ const CalendarView = () => {
     // Check if this is a conflicting event and generate explanation if needed
     let conflictExplanation = '';
     if (info.event.extendedProps.isConflicting) {
-      // Use backend conflicts data
+      const currentAppointment = appointments.find(
+        (appointment) => appointment.id === info.event.id
+      );
       const conflicts = info.event.extendedProps.conflicts;
       if (conflicts && conflicts.length > 0) {
-        // Generate explanation based on backend conflict data
-        const firstConflict = conflicts[0];
-        const errorMapping = {
-          SolutionResourceDoubleBooked:
-            'Same resource booked for overlapping errands in the solution',
-          EachErrandResourceHaveAServiceProvidedByParentErrand:
-            'Each resource assigned to an errand must have a service provided by the parent errand',
-          ServicingResourceCapacityMatchesCustomerResourcesCapacity:
-            'The capacity of the servicing resource must match the capacity of the customer resource',
-          ResourceAvailableForErrand:
-            'Resource must be available for the errand according to its availability calendar',
-        };
-        conflictExplanation =
-          errorMapping[firstConflict.evaluationCriteria] ||
-          `Conflict detected: ${firstConflict.evaluationCriteria}`;
+        conflictExplanation = buildConflictExplanation(
+          conflicts,
+          currentAppointment
+        );
       }
     }
 
@@ -491,26 +698,10 @@ const CalendarView = () => {
     if (!conflictingAppointment) return;
 
     // Generate conflict explanation from backend conflicts data
-    let conflictExplanation = '';
-    if (
-      conflictingAppointment.conflicts &&
-      conflictingAppointment.conflicts.length > 0
-    ) {
-      const firstConflict = conflictingAppointment.conflicts[0];
-      const errorMapping = {
-        SolutionResourceDoubleBooked:
-          'Same resource booked for overlapping errands in the solution',
-        EachErrandResourceHaveAServiceProvidedByParentErrand:
-          'Each resource assigned to an errand must have a service provided by the parent errand',
-        ServicingResourceCapacityMatchesCustomerResourcesCapacity:
-          'The capacity of the servicing resource must match the capacity of the customer resource',
-        ResourceAvailableForErrand:
-          'Resource must be available for the errand according to its availability calendar',
-      };
-      conflictExplanation =
-        errorMapping[firstConflict.evaluationCriteria] ||
-        `Conflict detected: ${firstConflict.evaluationCriteria}`;
-    }
+    const conflictExplanation = buildConflictExplanation(
+      conflictingAppointment.conflicts,
+      conflictingAppointment
+    );
 
     // Set the popup event to show the modal with conflict info
     const popupEventData = {
