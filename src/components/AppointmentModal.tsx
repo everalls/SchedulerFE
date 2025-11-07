@@ -8,7 +8,13 @@ import {
   TextField,
   Stack,
   Autocomplete,
+  Tooltip,
+  Box,
+  Typography,
+  IconButton,
 } from '@mui/material';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import LockOpenOutlinedIcon from '@mui/icons-material/LockOpenOutlined';
 import {
   Appointment,
   BackendClient,
@@ -83,41 +89,88 @@ const AppointmentDetailsModal: React.FC<Props> = ({
         room: '',
         startTime: '',
         endTime: '',
+        providerLocked: false,
+        roomLocked: false,
       });
     }
   }, [open, activeAppointment, setActiveAppointment]);
 
   const handleChange = (field: keyof Appointment, value: string | number) => {
-    if (activeAppointment) {
-      setActiveAppointment({ ...activeAppointment, [field]: value });
-    }
+    setActiveAppointment((prev) => (prev ? { ...prev, [field]: value } : prev));
   };
 
-  const handleObjectChange = (field: keyof Appointment, object: any) => {
-    if (activeAppointment && object) {
-      const nameField =
-        field === 'clientName'
-          ? 'clientName'
-          : field === 'service'
-          ? 'service'
-          : field === 'provider'
-          ? 'provider'
-          : 'room';
-      const idField =
-        field === 'clientName'
-          ? 'clientId'
-          : field === 'service'
-          ? 'serviceId'
-          : field === 'provider'
-          ? 'providerId'
-          : 'roomId';
+  const handleLockChange = (
+    lockField: 'providerLocked' | 'roomLocked',
+    value: boolean
+  ) => {
+    setActiveAppointment((prev) =>
+      prev ? { ...prev, [lockField]: value } : prev
+    );
+  };
 
-      setActiveAppointment({
-        ...activeAppointment,
-        [nameField]: object.name,
-        [idField]: object.id,
-      });
-    }
+  const handleObjectChange = (
+    field: 'clientName' | 'service' | 'provider' | 'room',
+    object: any
+  ) => {
+    setActiveAppointment((prev) => {
+      if (!prev) return prev;
+
+      if (!object) {
+        const cleared: Partial<Appointment> = {};
+        switch (field) {
+          case 'clientName':
+            cleared.clientName = '';
+            cleared.clientId = undefined;
+            break;
+          case 'service':
+            cleared.service = '';
+            cleared.serviceId = undefined;
+            break;
+          case 'provider':
+            cleared.provider = '';
+            cleared.providerId = undefined;
+            cleared.providerLocked = false;
+            break;
+          case 'room':
+            cleared.room = '';
+            cleared.roomId = undefined;
+            cleared.roomLocked = false;
+            break;
+        }
+        return { ...prev, ...cleared } as Appointment;
+      }
+
+      const updated: Partial<Appointment> = {};
+
+      switch (field) {
+        case 'clientName':
+          updated.clientName = object.name ?? '';
+          updated.clientId = object.id;
+          break;
+        case 'service':
+          updated.service = object.name ?? '';
+          updated.serviceId = object.id;
+          break;
+        case 'provider':
+          updated.provider = object.name ?? '';
+          updated.providerId = object.id;
+          updated.providerLocked =
+            typeof object.isLocked === 'boolean'
+              ? object.isLocked
+              : prev.providerLocked ?? false;
+          break;
+        case 'room':
+          updated.room = object.name ?? '';
+          updated.roomId = object.id;
+          updated.roomLocked =
+            typeof object.isLocked === 'boolean'
+              ? object.isLocked
+              : prev.roomLocked ?? false;
+          break;
+      }
+
+      return { ...prev, ...updated } as Appointment;
+    });
   };
 
   const handleSave = () => {
@@ -140,6 +193,94 @@ const AppointmentDetailsModal: React.FC<Props> = ({
   const parseToDate = (value: string | null | undefined) =>
     value ? new Date(value) : null;
 
+  const renderMandatoryOption = (
+    props: React.HTMLAttributes<HTMLLIElement>,
+    option: BackendWorker | BackendLocation,
+    type: 'provider' | 'room'
+  ) => {
+    const isSelected =
+      type === 'provider'
+        ? activeAppointment?.providerId === option.id
+        : activeAppointment?.roomId === option.id;
+
+    const lockedValue =
+      type === 'provider'
+        ? isSelected
+          ? Boolean(activeAppointment?.providerLocked)
+          : Boolean(option.isLocked)
+        : isSelected
+        ? Boolean(activeAppointment?.roomLocked)
+        : Boolean(option.isLocked);
+
+    const lockLabel = lockedValue
+      ? type === 'provider'
+        ? 'Provider is locked'
+        : 'Room is locked'
+      : type === 'provider'
+      ? 'Provider is unlocked'
+      : 'Room is unlocked';
+
+    return (
+      <li {...props} key={option.id}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+            gap: 1.5,
+            py: 0.5,
+          }}
+        >
+          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              {option.name}
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ textTransform: 'capitalize' }}
+            >
+              {type}
+            </Typography>
+          </Box>
+          <Tooltip title={lockLabel} arrow>
+            <IconButton
+              size="small"
+              sx={{
+                color: lockedValue ? 'error.main' : 'success.main',
+                '&:hover': {
+                  backgroundColor: 'transparent',
+                  color: lockedValue ? 'error.dark' : 'success.dark',
+                },
+              }}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                const newLocked = !lockedValue;
+                if (!isSelected) {
+                  handleObjectChange(type, option);
+                }
+                handleLockChange(
+                  type === 'provider' ? 'providerLocked' : 'roomLocked',
+                  newLocked
+                );
+              }}
+              aria-label={lockLabel}
+            >
+              {lockedValue ? (
+                <LockOutlinedIcon fontSize="small" />
+              ) : (
+                <LockOpenOutlinedIcon fontSize="small" />
+              )}
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </li>
+    );
+  };
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>
@@ -151,6 +292,7 @@ const AppointmentDetailsModal: React.FC<Props> = ({
             options={clients}
             getOptionLabel={(option) => option.name}
             value={
+              clients.find((c) => c.id === activeAppointment?.clientId) ||
               clients.find((c) => c.name === activeAppointment?.clientName) ||
               null
             }
@@ -179,6 +321,7 @@ const AppointmentDetailsModal: React.FC<Props> = ({
             options={services}
             getOptionLabel={(option) => option.name}
             value={
+              services.find((s) => s.id === activeAppointment?.serviceId) ||
               services.find((s) => s.name === activeAppointment?.service) ||
               null
             }
@@ -205,6 +348,7 @@ const AppointmentDetailsModal: React.FC<Props> = ({
             options={providers}
             getOptionLabel={(option) => option.name}
             value={
+              providers.find((p) => p.id === activeAppointment?.providerId) ||
               providers.find((p) => p.name === activeAppointment?.provider) ||
               null
             }
@@ -212,6 +356,10 @@ const AppointmentDetailsModal: React.FC<Props> = ({
               handleObjectChange('provider', newValue)
             }
             loading={isLoading}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            renderOption={(props, option) =>
+              renderMandatoryOption(props, option, 'provider')
+            }
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -231,10 +379,16 @@ const AppointmentDetailsModal: React.FC<Props> = ({
             options={rooms}
             getOptionLabel={(option) => option.name}
             value={
-              rooms.find((r) => r.name === activeAppointment?.room) || null
+              rooms.find((r) => r.id === activeAppointment?.roomId) ||
+              rooms.find((r) => r.name === activeAppointment?.room) ||
+              null
             }
             onChange={(event, newValue) => handleObjectChange('room', newValue)}
             loading={isLoading}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            renderOption={(props, option) =>
+              renderMandatoryOption(props, option, 'room')
+            }
             renderInput={(params) => (
               <TextField
                 {...params}
