@@ -14,6 +14,7 @@ import {
   DialogActions,
   Typography,
   CircularProgress,
+  Popper,
 } from '@mui/material';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
@@ -23,6 +24,7 @@ import { Appointment, BackendLocation, BackendWorker } from '../types';
 import { updateAppointment } from '../utils';
 import EventDetailsModal from './EventDetailsModal';
 import AppointmentDetailsModal from './AppointmentModal';
+import EventTooltip from './EventTooltip';
 import { format } from 'date-fns';
 import {
   appointmentToCalendarEvent,
@@ -83,6 +85,14 @@ const CalendarView = () => {
 
   const calendarRef = useRef<FullCalendar>(null);
 
+  // Tooltip state
+  const [tooltipAnchor, setTooltipAnchor] = useState<HTMLElement | null>(null);
+  const [tooltipAppointment, setTooltipAppointment] =
+    useState<Appointment | null>(null);
+  const [tooltipConflictExplanation, setTooltipConflictExplanation] =
+    useState<string>('');
+  const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Handle calendar date range changes
   const handleDatesSet = async (dateInfo: any) => {
     console.log('Calendar dates changed:', dateInfo);
@@ -97,6 +107,13 @@ const CalendarView = () => {
       const dateRange = getCalendarDateRange(calendar.view);
       fetchAppointments(dateRange);
     }
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (tooltipTimeoutRef.current) {
+        clearTimeout(tooltipTimeoutRef.current);
+      }
+    };
   }, []);
 
   const showSnackbar = (
@@ -557,7 +574,70 @@ const CalendarView = () => {
     return messages.join('\n');
   };
 
+  const handleEventMouseEnter = (info: any, jsEvent: MouseEvent) => {
+    // Clear any existing timeout
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+    }
+
+    const appointment = appointments.find((a) => a.id === info.event.id);
+    if (!appointment) return;
+
+    const eventEl = info.el;
+    if (!eventEl) return;
+
+    // Small delay before showing tooltip
+    tooltipTimeoutRef.current = setTimeout(() => {
+      // Build conflict explanation if needed
+      let conflictExplanation = '';
+      if (appointment.conflicts && appointment.conflicts.length > 0) {
+        conflictExplanation = buildConflictExplanation(
+          appointment.conflicts,
+          appointment
+        );
+      }
+
+      setTooltipAppointment(appointment);
+      setTooltipConflictExplanation(conflictExplanation);
+      setTooltipAnchor(eventEl as HTMLElement);
+    }, 300); // 300ms delay
+  };
+
+  const handleEventMouseLeave = () => {
+    // Clear timeout if tooltip hasn't shown yet
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+      tooltipTimeoutRef.current = null;
+    }
+
+    setTooltipAnchor(null);
+    setTooltipAppointment(null);
+    setTooltipConflictExplanation('');
+  };
+
+  const handleEventDidMount = (info: any) => {
+    const eventEl = info.el;
+    if (!eventEl) return;
+
+    // Attach mouse enter/leave handlers
+    eventEl.addEventListener('mouseenter', (e: MouseEvent) => {
+      handleEventMouseEnter(info, e);
+    });
+    eventEl.addEventListener('mouseleave', () => {
+      handleEventMouseLeave();
+    });
+  };
+
   const handleEventClick = (info: any) => {
+    // Hide tooltip when clicking on event
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+      tooltipTimeoutRef.current = null;
+    }
+    setTooltipAnchor(null);
+    setTooltipAppointment(null);
+    setTooltipConflictExplanation('');
+
     info.jsEvent.preventDefault(); // Prevent default browser context menu
     if (!info.event.id) {
       console.error('Event ID is missing! Ensure events have unique IDs.');
@@ -855,8 +935,40 @@ const CalendarView = () => {
           eventClick={handleEventClick} // Add right-click handler
           eventDrop={handleEventDrop} // Handle event drag-and-drop
           datesSet={handleDatesSet} // Handle date range changes
+          eventDidMount={handleEventDidMount} // Attach hover handlers for tooltip
         />
       </Paper>
+
+      {/* Event Tooltip */}
+      <Popper
+        open={Boolean(tooltipAnchor && tooltipAppointment)}
+        anchorEl={tooltipAnchor}
+        placement="top"
+        modifiers={[
+          {
+            name: 'offset',
+            options: {
+              offset: [0, 8],
+            },
+          },
+        ]}
+        sx={{ zIndex: 1300, pointerEvents: 'none' }}
+      >
+        {tooltipAppointment && (
+          <EventTooltip
+            clientName={tooltipAppointment.clientName}
+            service={tooltipAppointment.service}
+            provider={tooltipAppointment.provider}
+            room={tooltipAppointment.room}
+            startTime={tooltipAppointment.startTime}
+            endTime={tooltipAppointment.endTime}
+            providerLocked={tooltipAppointment.providerLocked}
+            roomLocked={tooltipAppointment.roomLocked}
+            conflicts={tooltipAppointment.conflicts}
+            conflictExplanation={tooltipConflictExplanation}
+          />
+        )}
+      </Popper>
 
       <EventDetailsModal
         open={Boolean(popupEvent)}
