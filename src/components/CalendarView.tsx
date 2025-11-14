@@ -581,16 +581,16 @@ const CalendarView = () => {
     return messages.join('\n');
   };
 
-  const handleEventMouseEnter = (info: any, jsEvent: MouseEvent) => {
+  const handleEventMouseEnter = (arg: any) => {
     // Clear any existing timeout
     if (tooltipTimeoutRef.current) {
       clearTimeout(tooltipTimeoutRef.current);
     }
 
-    const appointment = appointments.find((a) => a.id === info.event.id);
+    const appointment = appointments.find((a) => a.id === arg.event.id);
     if (!appointment) return;
 
-    const eventEl = info.el;
+    const eventEl = arg.el;
     if (!eventEl) return;
 
     // Small delay before showing tooltip
@@ -622,17 +622,15 @@ const CalendarView = () => {
     setTooltipConflictExplanation('');
   };
 
-  const handleEventDidMount = (info: any) => {
-    const eventEl = info.el;
-    if (!eventEl) return;
-
-    // Attach mouse enter/leave handlers
-    eventEl.addEventListener('mouseenter', (e: MouseEvent) => {
-      handleEventMouseEnter(info, e);
-    });
-    eventEl.addEventListener('mouseleave', () => {
-      handleEventMouseLeave();
-    });
+  const handleEventDragStart = () => {
+    // Hide tooltip immediately when drag starts
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+      tooltipTimeoutRef.current = null;
+    }
+    setTooltipAnchor(null);
+    setTooltipAppointment(null);
+    setTooltipConflictExplanation('');
   };
 
   const handleEventClick = (info: any) => {
@@ -940,9 +938,11 @@ const CalendarView = () => {
           eventDurationEditable={true} // Enable resizing from end
           select={handleDateSelect}
           eventClick={handleEventClick} // Add right-click handler
+          eventDragStart={handleEventDragStart} // Hide tooltip when drag starts
           eventDrop={handleEventDrop} // Handle event drag-and-drop
           datesSet={handleDatesSet} // Handle date range changes
-          eventDidMount={handleEventDidMount} // Attach hover handlers for tooltip
+          eventMouseEnter={handleEventMouseEnter} // Tooltip on hover
+          eventMouseLeave={handleEventMouseLeave} // Hide tooltip
         />
       </Paper>
 
