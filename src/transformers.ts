@@ -98,6 +98,8 @@ export const appointmentToCalendarEvent = (
       isConflicting,
       isModified,
       conflicts: appointment.conflicts, // Pass conflicts to extendedProps
+      providerLocked: appointment.providerLocked ?? false,
+      roomLocked: appointment.roomLocked ?? false,
     },
   };
 };

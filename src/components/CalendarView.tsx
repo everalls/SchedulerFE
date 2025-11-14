@@ -727,6 +727,8 @@ const CalendarView = () => {
         isConflicting: true,
         conflictExplanation: conflictExplanation,
         conflicts: conflictingAppointment.conflicts,
+        providerLocked: conflictingAppointment.providerLocked ?? false,
+        roomLocked: conflictingAppointment.roomLocked ?? false,
       },
     };
     setPopupEvent(popupEventData);

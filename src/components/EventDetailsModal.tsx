@@ -10,6 +10,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
+import LockIcon from '@mui/icons-material/Lock';
 import { format } from 'date-fns';
 import { CONFLICT_COLORS } from '../utils';
 
@@ -36,6 +37,8 @@ type CalendarPopupEvent = {
     room: string;
     service: string;
     conflicts?: any[];
+    providerLocked?: boolean;
+    roomLocked?: boolean;
   };
 };
 
@@ -235,18 +238,50 @@ const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
           {/* Room */}
           <Typography
             variant="body2"
-            sx={{ fontSize: '0.85rem', color: 'gray', mb: 1 }}
+            sx={{
+              fontSize: '0.85rem',
+              color: 'gray',
+              mb: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+            }}
           >
             <strong>Room:</strong> {popupEvent.extendedProps.room || 'N/A'}
+            {popupEvent.extendedProps.roomLocked && (
+              <LockIcon
+                sx={{
+                  fontSize: '0.9rem',
+                  color: '#d32f2f',
+                  ml: 0.5,
+                }}
+              />
+            )}
           </Typography>
 
           {/* Provider */}
           <Typography
             variant="body2"
-            sx={{ fontSize: '0.85rem', color: 'gray', mb: 1 }}
+            sx={{
+              fontSize: '0.85rem',
+              color: 'gray',
+              mb: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+            }}
           >
             <strong>Provider:</strong>{' '}
             {popupEvent.extendedProps.provider || 'N/A'}
+            {popupEvent.extendedProps.providerLocked && (
+              <LockIcon
+                sx={{
+                  fontSize: '0.9rem',
+                  color: '#d32f2f',
+                  ml: 0.5,
+                }}
+              />
+            )}
           </Typography>
         </Box>
       </DialogContent>
