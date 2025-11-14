@@ -38,11 +38,10 @@ import {
 } from '../services/api';
 
 const CONFLICT_MESSAGES: Record<string, string> = {
-  SolutionResourceDoubleBooked: 'Resource is already booked during this time.',
   EachErrandResourceHaveAServiceProvidedByParentErrand:
     'Resource is not configured for the requested service.',
   ServicingResourceCapacityMatchesCustomerResourcesCapacity:
-    'Resource capacity does not meet this appointment’s needs.',
+    "Resource capacity does not meet this appointment's needs.",
   ResourceAvailableForErrand:
     'Resource is not available during the requested time.',
 };
@@ -409,11 +408,11 @@ const CalendarView = () => {
                 const location = locationMap.get(locationId);
                 if (location) {
                   detailFragments.push(
-                    `Room "${location.name}" isn’t configured for ${requiredService}.`
+                    `Room "${location.name}" cannot provide ${requiredService}.`
                   );
                 } else {
                   detailFragments.push(
-                    `Room ${locationId} isn’t configured for ${requiredService}.`
+                    `Room ${locationId} cannot provide ${requiredService}.`
                   );
                 }
               });
@@ -424,11 +423,11 @@ const CalendarView = () => {
                 const worker = workerMap.get(workerId);
                 if (worker) {
                   detailFragments.push(
-                    `Provider "${worker.name}" isn’t configured for ${requiredService}.`
+                    `Provider "${worker.name}" cannot provide ${requiredService}.`
                   );
                 } else {
                   detailFragments.push(
-                    `Provider ${workerId} isn’t configured for ${requiredService}.`
+                    `Provider ${workerId} cannot provide ${requiredService}.`
                   );
                 }
               });
@@ -540,9 +539,18 @@ const CalendarView = () => {
       });
 
       if (detailFragments.length > 0) {
-        messages.push(`${baseMessage} ${detailFragments.join(' ')}`);
+        // For SolutionResourceDoubleBooked, skip the base message and only show details
+        if (conflict.evaluationCriteria === 'SolutionResourceDoubleBooked') {
+          messages.push(detailFragments.join(' '));
+        } else {
+          messages.push(`${baseMessage} ${detailFragments.join(' ')}`);
+        }
       } else {
-        messages.push(baseMessage);
+        // For SolutionResourceDoubleBooked with no details, skip entirely
+        // (shouldn't normally happen, but handle gracefully)
+        if (conflict.evaluationCriteria !== 'SolutionResourceDoubleBooked') {
+          messages.push(baseMessage);
+        }
       }
     });
 
