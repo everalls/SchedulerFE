@@ -40,8 +40,6 @@ import {
 } from '../services/api';
 
 const CONFLICT_MESSAGES: Record<string, string> = {
-  EachErrandResourceHaveAServiceProvidedByParentErrand:
-    'Resource is not configured for the requested service.',
   ServicingResourceCapacityMatchesCustomerResourcesCapacity:
     "Resource capacity does not meet this appointment's needs.",
   ResourceAvailableForErrand:
@@ -556,16 +554,25 @@ const CalendarView = () => {
       });
 
       if (detailFragments.length > 0) {
-        // For SolutionResourceDoubleBooked, skip the base message and only show details
-        if (conflict.evaluationCriteria === 'SolutionResourceDoubleBooked') {
+        // For SolutionResourceDoubleBooked and EachErrandResourceHaveAServiceProvidedByParentErrand,
+        // skip the base message and only show details
+        if (
+          conflict.evaluationCriteria === 'SolutionResourceDoubleBooked' ||
+          conflict.evaluationCriteria ===
+            'EachErrandResourceHaveAServiceProvidedByParentErrand'
+        ) {
           messages.push(detailFragments.join(' '));
         } else {
           messages.push(`${baseMessage} ${detailFragments.join(' ')}`);
         }
       } else {
-        // For SolutionResourceDoubleBooked with no details, skip entirely
-        // (shouldn't normally happen, but handle gracefully)
-        if (conflict.evaluationCriteria !== 'SolutionResourceDoubleBooked') {
+        // For SolutionResourceDoubleBooked and EachErrandResourceHaveAServiceProvidedByParentErrand
+        // with no details, skip entirely (shouldn't normally happen, but handle gracefully)
+        if (
+          conflict.evaluationCriteria !== 'SolutionResourceDoubleBooked' &&
+          conflict.evaluationCriteria !==
+            'EachErrandResourceHaveAServiceProvidedByParentErrand'
+        ) {
           messages.push(baseMessage);
         }
       }
