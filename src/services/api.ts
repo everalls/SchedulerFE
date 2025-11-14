@@ -7,6 +7,7 @@ import {
   CreateBookingRequest,
   UpdateBookingRequest,
   Appointment,
+  BackendConflict,
 } from '../types';
 
 // Use proxy in development, CORS proxy for GitHub Pages
@@ -51,8 +52,9 @@ export const fetchEvents = async (
     const { from, to } = params;
 
     // Format dates to match API expected format (YYYY-MM-DDTHH:mm)
-    const fromFormatted = new Date(from).toISOString().slice(0, 16);
-    const toFormatted = new Date(to).toISOString().slice(0, 16);
+    // Use ISO format with timezone offset
+    const fromFormatted = new Date(from).toISOString();
+    const toFormatted = new Date(to).toISOString();
 
     const url = `${API_BASE_URL}/booking?from=${fromFormatted}&to=${toFormatted}&calendarId=${CALENDAR_ID}`;
 
@@ -97,6 +99,24 @@ export const fetchEvents = async (
 };
 
 /**
+ * Helper function to get start of day in local timezone
+ */
+const getStartOfDay = (date: Date): Date => {
+  const startOfDay = new Date(date);
+  startOfDay.setHours(0, 0, 0, 0);
+  return startOfDay;
+};
+
+/**
+ * Helper function to get end of day in local timezone
+ */
+const getEndOfDay = (date: Date): Date => {
+  const endOfDay = new Date(date);
+  endOfDay.setHours(23, 59, 59, 999);
+  return endOfDay;
+};
+
+/**
  * Utility function to format date range for API calls
  */
 export const formatDateRange = (
@@ -116,14 +136,18 @@ export const getCalendarDateRange = (view: any): FetchEventsParams => {
   const start = view.activeStart;
   const end = view.activeEnd;
 
-  // Add some buffer to ensure we get all events
-  const bufferStart = new Date(start);
-  bufferStart.setDate(bufferStart.getDate() - 1);
+  // Get proper day boundaries without arbitrary buffer
+  // For day view: get exact day start/end
+  // For week view: get exact week start/end
+  const rangeStart = getStartOfDay(new Date(start));
 
-  const bufferEnd = new Date(end);
-  bufferEnd.setDate(bufferEnd.getDate() + 1);
+  // FullCalendar's activeEnd is the start of the next day, so we need to subtract 1ms
+  // to get the actual end of the current day
+  const rangeEnd = new Date(end);
+  rangeEnd.setMilliseconds(rangeEnd.getMilliseconds() - 1);
+  rangeEnd.setHours(23, 59, 59, 999);
 
-  return formatDateRange(bufferStart, bufferEnd);
+  return formatDateRange(rangeStart, rangeEnd);
 };
 
 /**
@@ -241,8 +265,8 @@ const appointmentToBookingRequest = (
   appointment: Appointment
 ): CreateBookingRequest => {
   // Format dates to match API expected format (YYYY-MM-DDTHH:mm:ss)
-  const starting = new Date(appointment.startTime).toISOString().slice(0, 19);
-  const ending = new Date(appointment.endTime).toISOString().slice(0, 19);
+  const starting = new Date(appointment.startTime).toISOString();
+  const ending = new Date(appointment.endTime).toISOString();
 
   return {
     calendarId: CALENDAR_ID,
@@ -251,10 +275,20 @@ const appointmentToBookingRequest = (
     starting,
     ending,
     locations: appointment.roomId
-      ? [{ id: appointment.roomId, IsLocked: false }]
+      ? [
+          {
+            id: appointment.roomId,
+            IsLocked: Boolean(appointment.roomLocked),
+          },
+        ]
       : [],
     workers: appointment.providerId
-      ? [{ id: appointment.providerId, IsLocked: false }]
+      ? [
+          {
+            id: appointment.providerId,
+            IsLocked: Boolean(appointment.providerLocked),
+          },
+        ]
       : [],
     clients: appointment.clientId
       ? [{ id: appointment.clientId, IsLocked: false }]
@@ -394,6 +428,110 @@ export const updateBooking = async (
     console.error('Error updating booking:', error);
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to update booking';
+    return { success: false, error: errorMessage };
+  }
+};
+
+/**
+ * Evaluates bookings and returns conflict status
+ */
+export const evaluateBookings = async (
+  appointments: Appointment[]
+): Promise<{
+  success: boolean;
+  error?: string;
+  conflicts?: BackendConflict[];
+}> => {
+  try {
+    // Convert all appointments to booking requests
+    const bookingRequests = appointments.map((appointment) => {
+      const bookingRequest = appointmentToBookingRequest(appointment);
+      const updateRequest: UpdateBookingRequest = {
+        ...bookingRequest,
+        id: parseInt(appointment.id),
+      };
+      return updateRequest;
+    });
+
+    const url = `${API_BASE_URL}/booking/evaluate?calendarId=${CALENDAR_ID}`;
+
+    console.log('Evaluating bookings:', bookingRequests);
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(bookingRequests),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}, ${errorText}`);
+    }
+
+    const data = await response.json();
+
+    console.log('Bookings evaluated successfully:', data);
+
+    return { success: true, conflicts: data };
+  } catch (error) {
+    console.error('Error evaluating bookings:', error);
+    const errorMessage =
+      error instanceof Error ? error.message : 'Failed to evaluate bookings';
+    return { success: false, error: errorMessage };
+  }
+};
+
+/**
+ * Optimizes bookings for a given date range
+ */
+export const optimizeBookings = async (
+  from: string,
+  to: string
+): Promise<{
+  success: boolean;
+  error?: string;
+  optimizedEvents?: BackendCalendarEvent[];
+  isValid?: boolean;
+  errors?: string[];
+  timesRetried?: number;
+}> => {
+  try {
+    const fromFormatted = new Date(from).toISOString();
+    const toFormatted = new Date(to).toISOString();
+
+    const url = `${API_BASE_URL}/booking/optimize?from=${fromFormatted}&to=${toFormatted}&calendarId=${CALENDAR_ID}`;
+
+    console.log('Optimizing bookings:', url);
+
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}, ${errorText}`);
+    }
+
+    const data = await response.json();
+
+    console.log('Bookings optimized successfully:', data);
+
+    return {
+      success: true,
+      optimizedEvents: data.optimized || [],
+      isValid: data.isValid,
+      errors: data.errors,
+      timesRetried: data.timesRetried,
+    };
+  } catch (error) {
+    console.error('Error optimizing bookings:', error);
+    const errorMessage =
+      error instanceof Error ? error.message : 'Failed to optimize bookings';
     return { success: false, error: errorMessage };
   }
 };

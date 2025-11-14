@@ -1,0 +1,400 @@
+API:
+
+PUT
+/booking/optimize?from=2025-10-21T00:00&to=2025-10-23T23:59&calendarId=2
+
+Result (events under the field "optimized"):
+
+{
+  "optimized": [
+      {
+          "description": "New Service 2",
+          "starting": "2025-10-21T07:00:00+00:00",
+          "ending": "2025-10-21T10:00:00+00:00",
+          "services": [
+              {
+                  "description": "test service 2",
+                  "calendarId": 2,
+                  "id": 2,
+                  "name": "New Service 2"
+              }
+          ],
+          "locations": [
+              {
+                  "isLocked": false,
+                  "description": "",
+                  "maxCapacity": 1,
+                  "availableServices": [
+                      {
+                          "description": "test service 2",
+                          "id": 2,
+                          "name": "New Service 2"
+                      }
+                  ],
+                  "customData": "{\"Data\":\"\"}",
+                  "calendarId": 2,
+                  "id": 5,
+                  "name": "Room2"
+              }
+          ],
+          "workers": [
+              {
+                  "isLocked": false,
+                  "description": "test worker",
+                  "availableServices": [
+                      {
+                          "description": "My service1",
+                          "id": 1,
+                          "name": "Servise1"
+                      },
+                      {
+                          "description": "test service 2",
+                          "id": 2,
+                          "name": "New Service 2"
+                      }
+                  ],
+                  "absences": [
+                      {
+                          "absenceTimeRange": {
+                              "start": "2025-09-20T00:00:00+00:00",
+                              "end": "2025-09-20T23:59:00+00:00"
+                          },
+                          "reason": ""
+                      }
+                  ],
+                  "customData": "none",
+                  "calendarId": 2,
+                  "id": 4,
+                  "name": "Angela"
+              }
+          ],
+          "clients": [
+              {
+                  "description": "",
+                  "firstName": "Genady",
+                  "middleName": "",
+                  "lastName": "",
+                  "phoneNumber": "",
+                  "address": "",
+                  "email": "",
+                  "customData": "{\"FirstName\":\"Genady\",\"MiddleName\":\"\",\"LastName\":\"\",\"PhoneNumber\":\"\",\"Address\":\"\",\"Email\":\"\"}",
+                  "preferrableResources": null,
+                  "calendarId": 2,
+                  "id": 3,
+                  "name": "Genady"
+              }
+          ],
+          "isLocked": false,
+          "conflicts": [],
+          "calendarId": 2,
+          "id": 41,
+          "name": "Genady - New Service 2"
+      },
+      {
+          "description": "Servise1",
+          "starting": "2025-10-23T08:15:00+00:00",
+          "ending": "2025-10-23T09:00:00+00:00",
+          "services": [
+              {
+                  "description": "My service1",
+                  "calendarId": 2,
+                  "id": 1,
+                  "name": "Servise1"
+              }
+          ],
+          "locations": [
+              {
+                  "isLocked": false,
+                  "description": "",
+                  "maxCapacity": 1,
+                  "availableServices": [
+                      {
+                          "description": "test service 2",
+                          "id": 2,
+                          "name": "New Service 2"
+                      }
+                  ],
+                  "customData": "{\"Data\":\"\"}",
+                  "calendarId": 2,
+                  "id": 5,
+                  "name": "Room2"
+              }
+          ],
+          "workers": [
+              {
+                  "isLocked": false,
+                  "description": "",
+                  "availableServices": [
+                      {
+                          "description": "My service1",
+                          "id": 1,
+                          "name": "Servise1"
+                      },
+                      {
+                          "description": "test service 2",
+                          "id": 2,
+                          "name": "New Service 2"
+                      }
+                  ],
+                  "customData": "{\"Data\":\"\"}",
+                  "calendarId": 2,
+                  "id": 7,
+                  "name": "Zuhra"
+              }
+          ],
+          "clients": [
+              {
+                  "description": "",
+                  "firstName": "Arthur",
+                  "middleName": "",
+                  "lastName": "",
+                  "phoneNumber": "",
+                  "address": "",
+                  "email": "",
+                  "customData": "{\"FirstName\":\"Arthur\",\"MiddleName\":\"\",\"LastName\":\"\",\"PhoneNumber\":\"\",\"Address\":\"\",\"Email\":\"\"}",
+                  "preferrableResources": null,
+                  "calendarId": 2,
+                  "id": 8,
+                  "name": "Arthur"
+              }
+          ],
+          "isLocked": false,
+          "conflicts": [
+              {
+                  "evaluationCriteria": "EachErrandResourceHaveAServiceProvidedByParentErrand",
+                  "results": [
+                      {
+                          "bookingId": 42,
+                          "conflictsWithIds": [],
+                          "locations": [
+                              5
+                          ],
+                          "workers": []
+                      }
+                  ]
+              }
+          ],
+          "calendarId": 2,
+          "id": 42,
+          "name": "Arthur - Servise1"
+      },
+      {
+          "description": "Servise1",
+          "starting": "2025-10-22T18:00:00+00:00",
+          "ending": "2025-10-22T19:00:00+00:00",
+          "services": [
+              {
+                  "description": "My service1",
+                  "calendarId": 2,
+                  "id": 1,
+                  "name": "Servise1"
+              }
+          ],
+          "locations": [
+              {
+                  "isLocked": false,
+                  "description": "my room 1",
+                  "maxCapacity": 1,
+                  "availableServices": [
+                      {
+                          "description": "My service1",
+                          "id": 1,
+                          "name": "Servise1"
+                      }
+                  ],
+                  "customData": "{\"Data\":\"\"}",
+                  "calendarId": 2,
+                  "id": 1,
+                  "name": "room1"
+              }
+          ],
+          "workers": [
+              {
+                  "isLocked": false,
+                  "description": "",
+                  "availableServices": [
+                      {
+                          "description": "My service1",
+                          "id": 1,
+                          "name": "Servise1"
+                      },
+                      {
+                          "description": "test service 2",
+                          "id": 2,
+                          "name": "New Service 2"
+                      }
+                  ],
+                  "customData": "{\"Data\":\"\"}",
+                  "calendarId": 2,
+                  "id": 7,
+                  "name": "Zuhra"
+              }
+          ],
+          "clients": [
+              {
+                  "description": "",
+                  "firstName": "Genady",
+                  "middleName": "",
+                  "lastName": "",
+                  "phoneNumber": "",
+                  "address": "",
+                  "email": "",
+                  "customData": "{\"FirstName\":\"Genady\",\"MiddleName\":\"\",\"LastName\":\"\",\"PhoneNumber\":\"\",\"Address\":\"\",\"Email\":\"\"}",
+                  "preferrableResources": null,
+                  "calendarId": 2,
+                  "id": 3,
+                  "name": "Genady"
+              }
+          ],
+          "isLocked": false,
+          "conflicts": [],
+          "calendarId": 2,
+          "id": 43,
+          "name": "Genady - Servise1"
+      },
+      {
+          "description": "Servise1",
+          "starting": "2025-10-23T08:15:00+00:00",
+          "ending": "2025-10-23T09:15:00+00:00",
+          "services": [
+              {
+                  "description": "My service1",
+                  "calendarId": 2,
+                  "id": 1,
+                  "name": "Servise1"
+              }
+          ],
+          "locations": [
+              {
+                  "isLocked": false,
+                  "description": "my room 1",
+                  "maxCapacity": 1,
+                  "availableServices": [
+                      {
+                          "description": "My service1",
+                          "id": 1,
+                          "name": "Servise1"
+                      }
+                  ],
+                  "customData": "{\"Data\":\"\"}",
+                  "calendarId": 2,
+                  "id": 1,
+                  "name": "room1"
+              }
+          ],
+          "workers": [
+              {
+                  "isLocked": false,
+                  "description": "",
+                  "availableServices": [
+                      {
+                          "description": "My service1",
+                          "id": 1,
+                          "name": "Servise1"
+                      }
+                  ],
+                  "customData": "{\"Data\":\"\"}",
+                  "calendarId": 2,
+                  "id": 2,
+                  "name": "Vasya"
+              }
+          ],
+          "clients": [
+              {
+                  "description": "",
+                  "firstName": "Genady",
+                  "middleName": "",
+                  "lastName": "",
+                  "phoneNumber": "",
+                  "address": "",
+                  "email": "",
+                  "customData": "{\"FirstName\":\"Genady\",\"MiddleName\":\"\",\"LastName\":\"\",\"PhoneNumber\":\"\",\"Address\":\"\",\"Email\":\"\"}",
+                  "preferrableResources": null,
+                  "calendarId": 2,
+                  "id": 3,
+                  "name": "Genady"
+              }
+          ],
+          "isLocked": true,
+          "conflicts": [],
+          "calendarId": 2,
+          "id": 44,
+          "name": "Genady - Servise1"
+      },
+      {
+          "description": "Servise1",
+          "starting": "2025-10-22T17:00:00+00:00",
+          "ending": "2025-10-22T17:30:00+00:00",
+          "services": [
+              {
+                  "description": "My service1",
+                  "calendarId": 2,
+                  "id": 1,
+                  "name": "Servise1"
+              }
+          ],
+          "locations": [
+              {
+                  "isLocked": false,
+                  "description": "my room 1",
+                  "maxCapacity": 1,
+                  "availableServices": [
+                      {
+                          "description": "My service1",
+                          "id": 1,
+                          "name": "Servise1"
+                      }
+                  ],
+                  "customData": "{\"Data\":\"\"}",
+                  "calendarId": 2,
+                  "id": 1,
+                  "name": "room1"
+              }
+          ],
+          "workers": [
+              {
+                  "isLocked": false,
+                  "description": "",
+                  "availableServices": [
+                      {
+                          "description": "My service1",
+                          "id": 1,
+                          "name": "Servise1"
+                      }
+                  ],
+                  "customData": "{\"Data\":\"\"}",
+                  "calendarId": 2,
+                  "id": 2,
+                  "name": "Vasya"
+              }
+          ],
+          "clients": [
+              {
+                  "description": "",
+                  "firstName": "Genady",
+                  "middleName": "",
+                  "lastName": "",
+                  "phoneNumber": "",
+                  "address": "",
+                  "email": "",
+                  "customData": "{\"FirstName\":\"Genady\",\"MiddleName\":\"\",\"LastName\":\"\",\"PhoneNumber\":\"\",\"Address\":\"\",\"Email\":\"\"}",
+                  "preferrableResources": null,
+                  "calendarId": 2,
+                  "id": 3,
+                  "name": "Genady"
+              }
+          ],
+          "isLocked": false,
+          "conflicts": [],
+          "calendarId": 2,
+          "id": 45,
+          "name": "Genady - Servise1"
+      }
+  ],
+  "isValid": false,
+  "errors": [
+      "EachErrandResourceHaveAServiceProvidedByParentErrand:42[5]"
+  ],
+  "timesRetried": 20
+}
+

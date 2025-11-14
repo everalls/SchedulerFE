@@ -30,6 +30,124 @@
   opacity: 1 !important;
 }
 
+/* Draft indicator button - red exclamation mark in circle with text */
+.fc-draftIndicator-button {
+  background: transparent !important;
+  border: 1px solid #d32f2f !important;
+  border-radius: 50% !important;
+  color: #d32f2f !important;
+  font-family: 'Roboto', sans-serif !important;
+  font-size: 12px !important;
+  font-weight: bold !important;
+  width: 16px !important;
+  height: 16px !important;
+  padding: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  pointer-events: none !important;
+  cursor: default !important;
+  vertical-align: middle !important;
+  position: relative !important;
+}
+
+.fc-draftIndicator-button::after {
+  content: 'Draft Mode' !important;
+  position: absolute !important;
+  left: 22px !important;
+  color: #d32f2f !important;
+  font-size: 16px !important;
+  font-weight: bold !important;
+  white-space: nowrap !important;
+}
+
+.fc-draftIndicator-button:hover,
+.fc-draftIndicator-button:focus,
+.fc-draftIndicator-button:active,
+.fc-draftIndicator-button:disabled {
+  background: transparent !important;
+  border-color: #d32f2f !important;
+  color: #d32f2f !important;
+  opacity: 1 !important;
+}
+
+/* Reset button - red color like draft indicator */
+.fc-resetButton-button {
+  background: transparent !important;
+  border: 1px solid #d32f2f !important;
+  border-radius: 4px !important;
+  color: #d32f2f !important;
+  font-family: 'Roboto', sans-serif !important;
+  font-size: 14px !important;
+  font-weight: bold !important;
+  padding: 6px 16px !important;
+  cursor: pointer !important;
+}
+
+.fc-resetButton-button:hover,
+.fc-resetButton-button:focus,
+.fc-resetButton-button:active,
+.fc-resetButton-button:disabled {
+  background: transparent !important;
+  border-color: #d32f2f !important;
+  color: #d32f2f !important;
+  opacity: 1 !important;
+}
+
+/* Save button - red color like draft indicator */
+.fc-saveButton-button {
+  background: transparent !important;
+  border: 1px solid #d32f2f !important;
+  border-radius: 4px !important;
+  color: #d32f2f !important;
+  font-family: 'Roboto', sans-serif !important;
+  font-size: 14px !important;
+  font-weight: bold !important;
+  padding: 6px 16px !important;
+  cursor: pointer !important;
+}
+
+.fc-saveButton-button:hover,
+.fc-saveButton-button:focus,
+.fc-saveButton-button:active,
+.fc-saveButton-button:disabled {
+  background: transparent !important;
+  border-color: #d32f2f !important;
+  color: #d32f2f !important;
+  opacity: 1 !important;
+}
+
+/* Title with draft indicator - combined display */
+.fc-titleWithDraft-button {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-family: 'Roboto', sans-serif !important;
+  font-size: 22px !important;
+  font-weight: 400 !important;
+  color: #3c4043 !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+  cursor: default !important;
+  text-transform: none !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.fc-titleWithDraft-button:hover,
+.fc-titleWithDraft-button:focus,
+.fc-titleWithDraft-button:active,
+.fc-titleWithDraft-button:disabled {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #3c4043 !important;
+  opacity: 1 !important;
+}
+
 /* Calendar Title - Gmail style */
 .fc-toolbar-title {
   font-family: 'Roboto', sans-serif;
@@ -154,10 +272,19 @@
   border-color: #dadce0;
 }
 
-/* Time slots */
+/* Time slots - Major hour slots */
 .fc-timegrid-slot {
-  height: 48px;
+  height: 48px !important;
   border-color: #dadce0;
+}
+
+/* Hide minor slot lines (15-minute divisions) */
+.fc-timegrid-slot-minor {
+  border-top: none !important;
+}
+
+.fc-timegrid-slot-minor .fc-timegrid-slot-label {
+  display: none !important;
 }
 
 .fc-timegrid-slot-label {
@@ -203,10 +330,86 @@
   box-shadow: 0 2px 6px 0 rgba(60, 64, 67, 0.4);
 }
 
+/* Enable bidirectional resizing */
+.fc-event-resizer {
+  cursor: ns-resize;
+}
+
+/* Top resize handle */
+.fc-event-resizer-start {
+  cursor: n-resize;
+}
+
+/* Bottom resize handle */
+.fc-event-resizer-end {
+  cursor: s-resize;
+}
+
 /* Event colors - Gmail palette */
 .fc-event {
   background-color: #039be5 !important;
+  border-left: 4px solid #0277bd !important; /* Default blue border */
+}
+
+/* Normal events - blue border */
+.fc-event-normal {
   border-left: 4px solid #0277bd !important;
+}
+
+/* Conflicting events - wider red border */
+.fc-event-conflicting {
+  border-left: 12px solid #d32f2f !important;
+  position: relative;
+}
+
+/* Modified events - reduce opacity for touched items in draft mode */
+.fc-event-modified {
+  opacity: 0.5 !important;
+  position: relative;
+}
+
+/* Conflicting AND modified events - keep red border but reduce opacity for touched items in draft mode */
+.fc-event-conflicting-modified {
+  border-left: 12px solid #d32f2f !important;
+  opacity: 0.5 !important;
+  position: relative;
+}
+
+/* Event content wrapper */
+.fc-event-content-wrapper {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* Clickable conflict icon - positioned relative to .fc-event */
+.fc-event-main .fc-conflict-icon {
+  position: absolute !important;
+  bottom: 2px !important;
+  left: -15px !important;
+  width: 10px !important;
+  height: 10px !important;
+  background-color: #d32f2f !important;
+  color: #ffffff !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 7px !important;
+  font-weight: bold !important;
+  font-family: 'Roboto', sans-serif !important;
+  cursor: pointer !important;
+  border: 1px solid #ffffff !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  transition: background-color 0.2s !important;
+  z-index: 10 !important;
+}
+
+.fc-conflict-icon:hover {
+  background-color: #b71c1c;
 }
 
 /* Event title */

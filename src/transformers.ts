@@ -13,6 +13,29 @@ export const backendToAppointment = (be: BackendCalendarEvent): Appointment => {
   const providerId = be.workers?.[0]?.id;
   const roomId = be.locations?.[0]?.id;
 
+  const servicesDetails =
+    be.services?.map((service) => ({
+      ...service,
+    })) ?? [];
+
+  const locationsDetails =
+    be.locations?.map((location) => ({
+      ...location,
+      availableServices:
+        location.availableServices?.map((service) => ({
+          ...service,
+        })) ?? [],
+    })) ?? [];
+
+  const workersDetails =
+    be.workers?.map((worker) => ({
+      ...worker,
+      availableServices:
+        worker.availableServices?.map((service) => ({
+          ...service,
+        })) ?? [],
+    })) ?? [];
+
   return {
     id: String(be.id),
     clientName,
@@ -27,22 +50,59 @@ export const backendToAppointment = (be: BackendCalendarEvent): Appointment => {
     // Preserve the backend timezone offsets; store as received
     startTime: be.starting,
     endTime: be.ending,
+    // Pass through conflicts from backend
+    conflicts: be.conflicts,
+    servicesDetails,
+    locationsDetails,
+    workersDetails,
+    providerLocked: be.workers?.[0]?.isLocked ?? false,
+    roomLocked: be.locations?.[0]?.isLocked ?? false,
   };
 };
 
 // Thin view-model for FullCalendar (avoid global type)
-export const appointmentToCalendarEvent = (appointment: Appointment) => ({
-  id: appointment.id,
-  title: `${appointment.clientName} - ${appointment.service}`.trim() || 'Event',
-  start: appointment.startTime,
-  end: appointment.endTime,
-  extendedProps: {
-    clientName: appointment.clientName,
-    provider: appointment.provider,
-    room: appointment.room,
-    service: appointment.service,
-  },
-});
+export const appointmentToCalendarEvent = (
+  appointment: Appointment,
+  allAppointments: Appointment[] = [],
+  modifiedEventIds: Set<string> = new Set()
+) => {
+  // Use backend conflicts instead of client-side logic
+  const isConflicting =
+    appointment.conflicts && appointment.conflicts.length > 0;
+  const isModified = modifiedEventIds.has(appointment.id);
+
+  return {
+    id: appointment.id,
+    title:
+      `${appointment.clientName} - ${appointment.service}`.trim() || 'Event',
+    start: appointment.startTime,
+    end: appointment.endTime,
+    editable: true,
+    startEditable: true,
+    durationEditable: true,
+    resourceEditable: true,
+    constraint: null,
+    className:
+      isConflicting && isModified
+        ? 'fc-event-conflicting-modified'
+        : isConflicting
+        ? 'fc-event-conflicting'
+        : isModified
+        ? 'fc-event-modified'
+        : 'fc-event-normal',
+    extendedProps: {
+      clientName: appointment.clientName,
+      provider: appointment.provider,
+      room: appointment.room,
+      service: appointment.service,
+      isConflicting,
+      isModified,
+      conflicts: appointment.conflicts, // Pass conflicts to extendedProps
+      providerLocked: appointment.providerLocked ?? false,
+      roomLocked: appointment.roomLocked ?? false,
+    },
+  };
+};
 
 export const backendToCalendarEvent = (be: BackendCalendarEvent) =>
   appointmentToCalendarEvent(backendToAppointment(be));
